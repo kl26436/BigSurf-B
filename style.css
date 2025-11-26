@@ -2582,8 +2582,8 @@ body {
     position: fixed;
     top: 10px;
     right: 10px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--primary);
+    background: linear-gradient(135deg, var(--primary), #20b2aa);
+    border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 6px;
     padding: 0.4rem 0.6rem;
     z-index: 1000;
@@ -2612,7 +2612,7 @@ body {
 .rest-timer-display {
     font-size: 1.25rem;
     font-weight: bold;
-    color: var(--primary);
+    color: #000000;
     margin: 0;
     line-height: 1;
 }
