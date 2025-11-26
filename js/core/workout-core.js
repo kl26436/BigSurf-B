@@ -678,20 +678,35 @@ async function checkSetForPR(exerciseIndex, setIndex) {
                 }
             }
 
-            // Show PR notification (no mention of rest timer)
-            let prMessage = '🏆 NEW PR! ';
-            if (prCheck.prType === 'maxWeight') {
-                prMessage += `Max Weight: ${set.weight} lbs × ${set.reps}`;
-            } else if (prCheck.prType === 'maxReps') {
-                prMessage += `Max Reps: ${set.reps} @ ${set.weight} lbs`;
-            } else if (prCheck.prType === 'maxVolume') {
-                prMessage += `Max Volume: ${set.reps * set.weight} lbs`;
-            } else if (prCheck.prType === 'first') {
-                prMessage += `First time doing ${exerciseName}!`;
+            // For "first time" PRs, only show notification once per exercise
+            // For other PR types (maxWeight, maxReps, maxVolume), show for each unique achievement
+            const exerciseNotifyKey = `${exerciseIndex}-${prCheck.prType}`;
+            const shouldNotify = prCheck.prType === 'first'
+                ? !prNotifiedSets.has(exerciseNotifyKey)
+                : true;
+
+            if (shouldNotify) {
+                if (prCheck.prType === 'first') {
+                    // Mark the entire exercise as notified for "first" type
+                    prNotifiedSets.add(exerciseNotifyKey);
+                }
+
+                // Show PR notification
+                let prMessage = '🏆 NEW PR! ';
+                if (prCheck.prType === 'maxWeight') {
+                    prMessage += `Max Weight: ${set.weight} lbs × ${set.reps}`;
+                } else if (prCheck.prType === 'maxReps') {
+                    prMessage += `Max Reps: ${set.reps} @ ${set.weight} lbs`;
+                } else if (prCheck.prType === 'maxVolume') {
+                    prMessage += `Max Volume: ${set.reps * set.weight} lbs`;
+                } else if (prCheck.prType === 'first') {
+                    prMessage += `First time doing ${exerciseName}!`;
+                }
+
+                showNotification(prMessage, 'success');
+                console.log(`🏆 PR detected for ${exerciseName}:`, prCheck);
             }
 
-            showNotification(prMessage, 'success');
-            console.log(`🏆 PR detected for ${exerciseName}:`, prCheck);
             return true;
         }
 
