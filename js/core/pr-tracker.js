@@ -3,7 +3,6 @@
 
 import { AppState } from './app-state.js';
 import { db, doc, setDoc, getDoc } from './firebase-config.js';
-import { showNotification } from './ui-helpers.js';
 
 // ===================================================================
 // PR TRACKING STATE
@@ -318,9 +317,10 @@ export async function processWorkoutForPRs(workoutData) {
         }
     }
 
-    if (newPRCount > 0) {
-        showNotification(`🏆 ${newPRCount} new PR${newPRCount > 1 ? 's' : ''} achieved!`, 'success');
-    }
+    // Don't show notification here - user already got notified during workout
+    // if (newPRCount > 0) {
+    //     showNotification(`🏆 ${newPRCount} new PR${newPRCount > 1 ? 's' : ''} achieved!`, 'success');
+    // }
 
     console.log(`✅ PR processing complete. ${newPRCount} new PRs recorded.`);
 }
