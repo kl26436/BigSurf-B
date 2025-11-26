@@ -133,37 +133,40 @@ export function initializeEnhancedWorkoutSelector() {
 // AUTHENTICATION
 // ===================================================================
 
+let signingIn = false; // Prevent multiple simultaneous sign-in attempts
+
 export async function signIn() {
+    // Prevent multiple popups from opening
+    if (signingIn) {
+        console.log('⚠️ Sign-in already in progress, ignoring duplicate request');
+        return;
+    }
+
     try {
-        console.log('🔐 Attempting Google sign-in...');
+        signingIn = true;
+        console.log('🔐 signIn() function called');
+        console.log('💻 Using popup auth (works on mobile when triggered by user click)');
 
-        // Use redirect on production (Firebase Hosting), popup on localhost
-        const isProduction = window.location.hostname.includes('web.app') ||
-                            window.location.hostname.includes('firebaseapp.com');
-
-        if (isProduction) {
-            console.log('📱 Using redirect auth (production mode)');
-            await signInWithRedirect(auth, provider);
-            // Redirect happens - user will return to app after auth
-        } else {
-            console.log('💻 Using popup auth (development mode)');
-            const result = await signInWithPopup(auth, provider);
-            console.log('✅ Sign-in successful:', result.user.displayName);
-            showNotification(`Welcome, ${result.user.displayName}!`, 'success');
-        }
+        const result = await signInWithPopup(auth, provider);
+        console.log('✅ Sign-in successful:', result.user.displayName);
+        showNotification(`Welcome, ${result.user.displayName}!`, 'success');
     } catch (error) {
         console.error('❌ Sign-in error:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
 
         if (error.code === 'auth/popup-closed-by-user') {
             showNotification('Sign-in cancelled', 'info');
         } else if (error.code === 'auth/popup-blocked') {
-            showNotification('Popup blocked - please allow popups or try again', 'warning');
+            showNotification('Popup blocked - please allow popups and try again', 'warning');
         } else if (error.code === 'auth/cancelled-popup-request') {
-            // User opened multiple popups, ignore
+            // Ignore - this happens when multiple sign-in attempts overlap
             console.log('ℹ️ Duplicate popup request cancelled');
         } else {
             showNotification('Sign-in failed. Please try again.', 'error');
         }
+    } finally {
+        signingIn = false;
     }
 }
 
@@ -183,7 +186,8 @@ export async function signOutUser() {
             'workout-selector',
             'active-workout',
             'workout-history-section',
-            'workout-management',
+            'workout-management-section',
+            'exercise-manager-section',
             'dashboard',
             'stats-section'
         ];
@@ -197,8 +201,12 @@ export async function signOutUser() {
         const resumeBanner = document.getElementById('resume-workout-banner');
         if (resumeBanner) resumeBanner.classList.add('hidden');
 
-        // Show auth section
+        // Hide loading screen and show auth section
         hideUserInfo();
+
+        // Make sure loading screen is hidden
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
 
         // Clear app state completely
         AppState.currentUser = null;
@@ -248,19 +256,22 @@ export function hideUserInfo() {
 export function setupAuthenticationListener() {
     console.log('🔐 Setting up authentication listener...');
 
-    // Check for redirect result first (for production sign-in)
+    // Handle redirect result (user coming back from Google sign-in)
+    console.log('🔍 Checking for redirect result...');
     getRedirectResult(auth)
         .then((result) => {
+            console.log('🔍 Redirect result received:', result);
             if (result && result.user) {
                 console.log('✅ Sign-in redirect successful:', result.user.displayName);
-                showNotification(`Welcome, ${result.user.displayName}!`, 'success');
+                // Don't show notification here - onAuthStateChanged will handle it
+            } else {
+                console.log('ℹ️ No redirect result (user did not just sign in via redirect)');
             }
         })
         .catch((error) => {
-            if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-                // Ignore - user cancelled
-                console.log('ℹ️ Redirect sign-in cancelled');
-            } else {
+            console.error('❌ Redirect result error:', error);
+            // Only show error if it's a real error, not a cancellation
+            if (error.code && error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
                 console.error('❌ Redirect sign-in error:', error);
                 showNotification('Sign-in failed. Please try again.', 'error');
             }
@@ -310,11 +321,24 @@ export function setupAuthenticationListener() {
             console.log('👤 User signed out');
             AppState.currentUser = null;
 
-            // Update UI
+            // Hide all content sections
+            const sections = [
+                'workout-selector',
+                'active-workout',
+                'workout-history-section',
+                'workout-management-section',
+                'exercise-manager-section',
+                'dashboard',
+                'stats-section'
+            ];
 
-            // Show sign-in prompt in loading screen
+            sections.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) section.classList.add('hidden');
+            });
+
+            // Show sign-in prompt
             showSignInPrompt();
-
             hideUserInfo();
         }
     });
@@ -533,88 +557,35 @@ export function setupEventListeners() {
 
 function setupSignInListeners() {
     console.log(' Setting up sign-in listeners...');
-    
-    // Debug: Log all potential sign-in buttons
-    const allSignInElements = document.querySelectorAll('#sign-in-btn, .sign-in-btn, .signin-btn, [onclick*="signIn"], button[class*="sign"]');
-    console.log(' Found potential sign-in elements:', allSignInElements.length);
-    allSignInElements.forEach((el, i) => {
-        console.log(` ${i + 1}. ID: "${el.id}", Class: "${el.className}", Text: "${el.textContent?.trim()}"${el.onclick ? ', Has onclick' : ''}`);
-    });
-    
-    // Try multiple selectors for sign-in button
-    const signInSelectors = [
-        '#sign-in-btn',
-        '.sign-in-btn', 
-        'button:contains("Sign In with Google")',
-        'button[onclick*="signIn"]',
-        '[data-action="sign-in"]'
-    ];
-    
-    let signInBtn = null;
-    for (const selector of signInSelectors) {
-        if (selector.includes('contains')) {
-            // Special handling for text-based selector
-            const buttons = Array.from(document.querySelectorAll('button'));
-            signInBtn = buttons.find(btn => btn.textContent?.includes('Sign In with Google'));
-        } else {
-            signInBtn = document.querySelector(selector);
-        }
-        
-        if (signInBtn) {
-            console.log(` Found sign-in button with selector: ${selector}`);
-            break;
-        }
-    }
-    
-    if (signInBtn) {
-        console.log(' Sign-in button found, adding event listener');
-        console.log('Button details:', { id: signInBtn.id, className: signInBtn.className, textContent: signInBtn.textContent?.trim(),
-            hidden: signInBtn.classList.contains('hidden'),
-            display: window.getComputedStyle(signInBtn).display
-        });
-        
-        // Remove any existing onclick to prevent conflicts
-        signInBtn.onclick = null;
-        
-        // Add our event listener
-        signInBtn.addEventListener('click', (e) => {
+
+    // Set up listeners for ALL sign-in buttons (loading screen + main auth section)
+    const signInButtons = document.querySelectorAll('#sign-in-btn, #loading-signin-btn');
+    console.log(` Found ${signInButtons.length} sign-in button(s)`);
+
+    signInButtons.forEach((btn, index) => {
+        console.log(` ${index + 1}. ID: "${btn.id}", Visible: ${!btn.classList.contains('hidden')}`);
+
+        // Remove any existing onclick
+        btn.onclick = null;
+
+        // Add click event listener
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log(' Sign-in button clicked - calling signIn()');
-            
-            // Make sure function exists
+            console.log(` Sign-in button #${index + 1} (${btn.id}) clicked`);
+
             if (typeof window.signIn === 'function') {
                 window.signIn();
             } else {
-                console.error(' window.signIn is not a function:', typeof window.signIn);
+                console.error(' window.signIn is not a function');
             }
         });
-        
-        // Also add onclick as backup
-        signInBtn.onclick = (e) => {
-            e.preventDefault();
-            console.log(' Sign-in button onclick triggered');
-            if (typeof window.signIn === 'function') {
-                window.signIn();
-            }
-        };
-        
-    } else {
-        console.warn(' No sign-in button found with any selector');
-        
-        // Last resort: add click listener to document for any sign-in related clicks
-        document.addEventListener('click', (e) => {
-            const target = e.target.closest('button');
-            if (target && target.textContent?.includes('Sign In')) {
-                console.log(' Detected sign-in button click via document listener');
-                e.preventDefault();
-                if (typeof window.signIn === 'function') {
-                    window.signIn();
-                }
-            }
-        });
+    });
+
+    if (signInButtons.length === 0) {
+        console.warn(' No sign-in buttons found');
     }
-    
+
     // Sign-out button
     const signOutBtn = document.getElementById('sign-out-btn');
     if (signOutBtn) {

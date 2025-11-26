@@ -71,7 +71,7 @@ import {
     openExerciseManager, closeExerciseManager,
     filterExerciseLibrary, clearExerciseFilters, refreshExerciseLibrary,
     showAddExerciseModal, closeAddExerciseModal,
-    editExercise, saveExercise, deleteExercise
+    editExercise, saveExercise, deleteExercise, toggleExerciseGroup
 } from './core/exercise-manager-ui.js';
 
 // Location selector functionality
@@ -250,6 +250,7 @@ window.closeAddExerciseModal = closeAddExerciseModal;
 window.editExercise = editExercise;
 window.saveExercise = saveExercise;
 window.deleteExercise = deleteExercise;
+window.toggleExerciseGroup = toggleExerciseGroup;
 
 // Location Selector Functions
 window.showLocationSelector = showLocationSelector;

@@ -13,17 +13,24 @@ export function initializeWorkoutManagement(appState) {
 
 // Main navigation functions
 export async function showWorkoutManagement() {
-    console.log('🔧 Opening Workout Management modal');
+    console.log('🔧 Opening Workout Management section');
 
-    const modal = document.getElementById('workout-management-modal');
-    if (!modal) {
-        console.error('❌ Workout management modal not found');
+    const section = document.getElementById('workout-management-section');
+    if (!section) {
+        console.error('❌ Workout management section not found');
         return;
     }
 
-    // Show modal as overlay
-    modal.classList.remove('hidden');
-    console.log('✅ Workout management modal opened');
+    // Hide all other sections
+    const sections = ['dashboard', 'workout-selector', 'active-workout', 'workout-history-section', 'stats-section', 'exercise-manager-section'];
+    sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    // Show workout management section
+    section.classList.remove('hidden');
+    console.log('✅ Workout management section opened');
 
     // Initialize with default templates category
     setTimeout(() => {
@@ -32,32 +39,17 @@ export async function showWorkoutManagement() {
 }
 
 export function closeWorkoutManagement() {
-    console.log('🔧 Closing Workout Management modal');
+    console.log('🔧 Closing Workout Management section');
 
-    const modal = document.getElementById('workout-management-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-        console.log('✅ Workout management modal closed');
+    const section = document.getElementById('workout-management-section');
+    if (section) {
+        section.classList.add('hidden');
+        console.log('✅ Workout management section closed');
     }
-
-    // Hide legacy workout selector if showing
-    const workoutSelector = document.getElementById('workout-selector');
-    if (workoutSelector && !workoutSelector.classList.contains('hidden')) {
-        workoutSelector.classList.add('hidden');
-        console.log('✅ Legacy workout selector hidden');
-    }
-
-    // Ensure we're showing the dashboard
-    const dashboard = document.getElementById('dashboard');
-    const activeWorkout = document.getElementById('active-workout');
-    const historySection = document.getElementById('workout-history-section');
-
-    // Hide all other sections
-    if (activeWorkout) activeWorkout.classList.add('hidden');
-    if (historySection) historySection.classList.add('hidden');
 
     // Show dashboard
-    if (dashboard && dashboard.classList.contains('hidden')) {
+    const dashboard = document.getElementById('dashboard');
+    if (dashboard) {
         dashboard.classList.remove('hidden');
         console.log('✅ Dashboard shown');
     }

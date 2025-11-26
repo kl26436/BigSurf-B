@@ -3,7 +3,7 @@ import {
   getFirestore, doc, setDoc, getDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
-  getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut
+  getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // Firebase configuration
@@ -20,15 +20,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
+
+// Set auth persistence to LOCAL (survives browser restarts and redirects)
+setPersistence(auth, browserLocalPersistence)
+  .then(() => {
+    console.log('✅ Auth persistence set to LOCAL');
+  })
+  .catch((error) => {
+    console.error('❌ Error setting auth persistence:', error);
+  });
+
 export const provider = new GoogleAuthProvider();
 
-// Force account selection on sign-in (don't auto-select last account)
-provider.setCustomParameters({
-  prompt: 'select_account'
-});
+// Note: 'select_account' prompt can cause redirect loops on production
+// Removed for stability - users can sign out and use different account
 
 // Re-export Firebase functions for easy importing
 export {
   doc, setDoc, getDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, onSnapshot,
-  onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signOut
+  onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, setPersistence, browserLocalPersistence
 };

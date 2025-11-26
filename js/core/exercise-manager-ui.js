@@ -8,48 +8,35 @@ let allExercises = [];
 let filteredExercises = [];
 let currentEditingExercise = null;
 
-// Open exercise manager modal
+// Open exercise manager section
 export function openExerciseManager() {
-    console.log('📚 Opening exercise manager...');
-    const modal = document.getElementById('exercise-manager-modal');
-    if (modal) {
-        modal.classList.remove('hidden');
+    console.log('📚 Opening exercise manager section...');
+    const section = document.getElementById('exercise-manager-section');
+    if (section) {
+        // Hide all other sections
+        const sections = ['dashboard', 'workout-selector', 'active-workout', 'workout-history-section', 'stats-section', 'workout-management-section'];
+        sections.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
+
+        section.classList.remove('hidden');
         loadExercises();
     }
 }
 
-// Close exercise manager modal
+// Close exercise manager section
 export function closeExerciseManager() {
-    const modal = document.getElementById('exercise-manager-modal');
-    if (modal) {
-        modal.classList.add('hidden');
+    const section = document.getElementById('exercise-manager-section');
+    if (section) {
+        section.classList.add('hidden');
     }
 
-    // Hide legacy workout selector if it's showing
-    const workoutSelector = document.getElementById('workout-selector');
-    if (workoutSelector && !workoutSelector.classList.contains('hidden')) {
-        workoutSelector.classList.add('hidden');
-        console.log('✅ Legacy workout selector hidden');
-    }
-
-    // Ensure we're showing the dashboard
+    // Show dashboard
     const dashboard = document.getElementById('dashboard');
-    const activeWorkout = document.getElementById('active-workout');
-    const historySection = document.getElementById('workout-history-section');
-
-    // Check if we're in an active workout - if so, don't navigate away
-    const inActiveWorkout = activeWorkout && !activeWorkout.classList.contains('hidden');
-
-    if (!inActiveWorkout) {
-        // Hide all other sections
-        if (activeWorkout) activeWorkout.classList.add('hidden');
-        if (historySection) historySection.classList.add('hidden');
-
-        // Show dashboard
-        if (dashboard && dashboard.classList.contains('hidden')) {
-            dashboard.classList.remove('hidden');
-            console.log('✅ Dashboard shown');
-        }
+    if (dashboard) {
+        dashboard.classList.remove('hidden');
+        console.log('✅ Dashboard shown');
     }
 }
 
@@ -104,56 +91,66 @@ function renderExercises() {
         return;
     }
 
-    grid.innerHTML = filteredExercises.map(exercise => {
-        const exerciseTypeClass = exercise.isOverride ? 'override' : exercise.isCustom ? 'custom' : '';
-        const badge = exercise.isOverride ?
-            '<span class="exercise-type-badge badge-override">YOUR VERSION</span>' :
-            exercise.isCustom ?
-            '<span class="exercise-type-badge badge-custom">CUSTOM</span>' :
-            '<span class="exercise-type-badge badge-default">DEFAULT</span>';
+    // Group exercises by body part
+    const groupedExercises = {};
+    filteredExercises.forEach(exercise => {
+        const bodyPart = exercise.bodyPart || 'Other';
+        if (!groupedExercises[bodyPart]) {
+            groupedExercises[bodyPart] = [];
+        }
+        groupedExercises[bodyPart].push(exercise);
+    });
 
-        const deleteButton = getDeleteButton(exercise);
+    // Sort body parts alphabetically
+    const sortedBodyParts = Object.keys(groupedExercises).sort();
+
+    // Render grouped exercises with collapsible sections
+    grid.innerHTML = sortedBodyParts.map(bodyPart => {
+        const exercises = groupedExercises[bodyPart];
+        const groupId = `group-${bodyPart.toLowerCase().replace(/\s+/g, '-')}`;
+
+        const exerciseCards = exercises.map(exercise => {
+            const exerciseTypeClass = exercise.isOverride ? 'override' : exercise.isCustom ? 'custom' : '';
+            const badge = exercise.isOverride ?
+                '<span class="exercise-type-badge badge-override">YOUR</span>' :
+                exercise.isCustom ?
+                '<span class="exercise-type-badge badge-custom">CUSTOM</span>' :
+                '';
+
+            const deleteButton = getDeleteButton(exercise);
+
+            return `
+                <div class="exercise-card ${exerciseTypeClass}">
+                    <div class="exercise-card-header">
+                        <h5>${exercise.name}</h5>
+                        ${badge}
+                    </div>
+                    <div class="exercise-card-stats">
+                        <span>${exercise.sets}×${exercise.reps}</span>
+                        <span>${exercise.weight} lbs</span>
+                        <span class="equipment-tag">${exercise.equipmentType}</span>
+                    </div>
+                    <div class="exercise-card-actions">
+                        <button class="btn-icon" onclick="editExercise('${exercise.id}')" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        ${deleteButton}
+                    </div>
+                </div>
+            `;
+        }).join('');
 
         return `
-            <div class="exercise-card ${exerciseTypeClass}">
-                <h4>
-                    ${exercise.name}
-                    ${badge}
-                </h4>
-
-                <div class="exercise-meta">
-                    <span class="meta-tag"><i class="fas fa-muscle"></i> ${exercise.bodyPart}</span>
-                    <span class="meta-tag"><i class="fas fa-dumbbell"></i> ${exercise.equipmentType}</span>
-                </div>
-
-                <div class="exercise-stats">
-                    <div class="stat">
-                        <div class="stat-value">${exercise.sets}</div>
-                        <div class="stat-label">Sets</div>
+            <div class="exercise-group">
+                <button class="exercise-group-header" onclick="toggleExerciseGroup('${groupId}')">
+                    <div class="group-header-content">
+                        <h3>${bodyPart}</h3>
+                        <span class="exercise-count">${exercises.length}</span>
                     </div>
-                    <div class="stat">
-                        <div class="stat-value">${exercise.reps}</div>
-                        <div class="stat-label">Reps</div>
-                    </div>
-                    <div class="stat">
-                        <div class="stat-value">${exercise.weight}</div>
-                        <div class="stat-label">lbs</div>
-                    </div>
-                </div>
-
-                ${exercise.video ? `
-                    <div style="margin-bottom: 0.75rem;">
-                        <a href="${exercise.video}" target="_blank" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-play"></i> Video
-                        </a>
-                    </div>
-                ` : ''}
-
-                <div class="exercise-actions">
-                    <button class="btn btn-secondary" onclick="editExercise('${exercise.id}')">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    ${deleteButton}
+                    <i class="fas fa-chevron-down group-toggle-icon"></i>
+                </button>
+                <div class="exercise-group-grid collapsed" id="${groupId}">
+                    ${exerciseCards}
                 </div>
             </div>
         `;
@@ -162,17 +159,31 @@ function renderExercises() {
 
 function getDeleteButton(exercise) {
     if (exercise.isOverride) {
-        return `<button class="btn btn-warning" onclick="deleteExercise('${exercise.id}')">
-            <i class="fas fa-undo"></i> Revert
+        return `<button class="btn-icon btn-icon-warning" onclick="deleteExercise('${exercise.id}')" title="Revert to default">
+            <i class="fas fa-undo"></i>
         </button>`;
     } else if (exercise.isCustom) {
-        return `<button class="btn btn-danger" onclick="deleteExercise('${exercise.id}')">
-            <i class="fas fa-trash"></i> Delete
+        return `<button class="btn-icon btn-icon-danger" onclick="deleteExercise('${exercise.id}')" title="Delete exercise">
+            <i class="fas fa-trash"></i>
         </button>`;
     } else {
-        return `<button class="btn btn-secondary" onclick="deleteExercise('${exercise.id}')">
-            <i class="fas fa-eye-slash"></i> Hide
+        return `<button class="btn-icon" onclick="deleteExercise('${exercise.id}')" title="Hide exercise">
+            <i class="fas fa-eye-slash"></i>
         </button>`;
+    }
+}
+
+// Toggle exercise group visibility
+export function toggleExerciseGroup(groupId) {
+    const group = document.getElementById(groupId);
+    const header = group?.previousElementSibling;
+
+    if (group && header) {
+        group.classList.toggle('collapsed');
+        const icon = header.querySelector('.group-toggle-icon');
+        if (icon) {
+            icon.style.transform = group.classList.contains('collapsed') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
     }
 }
 

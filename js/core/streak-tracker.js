@@ -61,7 +61,9 @@ export async function calculateStreaks() {
         console.log('🔍 Streak Debug - Today:', todayStr, '| Workout dates:', workoutDates);
 
         for (let i = workoutDates.length - 1; i >= 0; i--) {
-            const workoutDate = new Date(workoutDates[i]);
+            // Parse date string explicitly to avoid UTC/timezone issues
+            const [year, month, day] = workoutDates[i].split('-').map(Number);
+            const workoutDate = new Date(year, month - 1, day);
             workoutDate.setHours(0, 0, 0, 0);
 
             if (i === workoutDates.length - 1) {
@@ -86,7 +88,9 @@ export async function calculateStreaks() {
                     break;
                 }
             } else {
-                const prevDate = new Date(workoutDates[i + 1]);
+                // Parse date string explicitly to avoid UTC/timezone issues
+                const [prevYear, prevMonth, prevDay] = workoutDates[i + 1].split('-').map(Number);
+                const prevDate = new Date(prevYear, prevMonth - 1, prevDay);
                 prevDate.setHours(0, 0, 0, 0);
                 const daysDiff = Math.floor((prevDate - workoutDate) / (1000 * 60 * 60 * 24));
 
@@ -106,8 +110,11 @@ export async function calculateStreaks() {
             if (i === 0) {
                 tempStreak = 1;
             } else {
-                const currentDate = new Date(workoutDates[i]);
-                const prevDate = new Date(workoutDates[i - 1]);
+                // Parse date strings explicitly to avoid UTC/timezone issues
+                const [year, month, day] = workoutDates[i].split('-').map(Number);
+                const currentDate = new Date(year, month - 1, day);
+                const [prevYear, prevMonth, prevDay] = workoutDates[i - 1].split('-').map(Number);
+                const prevDate = new Date(prevYear, prevMonth - 1, prevDay);
                 currentDate.setHours(0, 0, 0, 0);
                 prevDate.setHours(0, 0, 0, 0);
 
@@ -174,7 +181,9 @@ export async function getWorkoutFrequencyByDay() {
         for (const doc of snapshot.docs) {
             const workout = doc.data();
             if (workout.completedAt) {
-                const date = new Date(doc.id);
+                // Parse date string explicitly to avoid UTC/timezone issues
+                const [year, month, day] = doc.id.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
                 const dayIndex = date.getDay();
                 dayCounts[dayIndex]++;
             }
@@ -216,7 +225,9 @@ export async function getWorkoutFrequencyByMonth() {
         for (const doc of snapshot.docs) {
             const workout = doc.data();
             if (workout.completedAt) {
-                const date = new Date(doc.id);
+                // Parse date string explicitly to avoid UTC/timezone issues
+                const [year, month, day] = doc.id.split('-').map(Number);
+                const date = new Date(year, month - 1, day);
                 const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
                 if (monthCounts.hasOwnProperty(key)) {
                     monthCounts[key]++;
