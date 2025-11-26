@@ -27,10 +27,6 @@ export async function showWorkoutHistory() {
     const historySection = document.getElementById('workout-history-section');
     if (historySection) historySection.classList.remove('hidden');
 
-    // Hide the legacy "Today" header since we're not on workout selector
-    const todayHeader = document.querySelector('.today-header');
-    if (todayHeader) todayHeader.classList.add('hidden');
-
     // Initialize calendar view
     await initializeCalendarView();
 }

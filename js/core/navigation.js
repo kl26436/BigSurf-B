@@ -49,17 +49,6 @@ export function navigateTo(view) {
         if (section) section.classList.add('hidden');
     });
 
-    // Show/hide header elements based on view
-    const todayHeader = document.querySelector('.today-header');
-    if (todayHeader) {
-        // Hide header on dashboard and stats, show on other views
-        if (view === 'dashboard' || view === 'stats') {
-            todayHeader.classList.add('hidden');
-        } else {
-            todayHeader.classList.remove('hidden');
-        }
-    }
-
     // Route to appropriate view
     switch (view) {
         case 'dashboard':

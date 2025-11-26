@@ -29,10 +29,6 @@ export async function showDashboard() {
     if (activeWorkout) activeWorkout.classList.add('hidden');
     if (historySection) historySection.classList.add('hidden');
 
-    // Show legacy header for dashboard (has navigation buttons)
-    const todayHeader = document.querySelector('.today-header');
-    if (todayHeader) todayHeader.classList.remove('hidden');
-
     // Show dashboard
     dashboardSection.classList.remove('hidden');
 

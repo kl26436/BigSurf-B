@@ -83,16 +83,12 @@ export function showWorkoutSelector() {
     const workoutManagement = document.getElementById('workout-management');
     const historySection = document.getElementById('workout-history-section');
     const dashboard = document.getElementById('dashboard');
-    const todayHeader = document.querySelector('.today-header');
 
     // Hide all other sections
     if (activeWorkout) activeWorkout.classList.add('hidden');
     if (workoutManagement) workoutManagement.classList.add('hidden');
     if (historySection) historySection.classList.add('hidden');
     if (dashboard) dashboard.classList.add('hidden');
-
-    // Hide legacy date header and buttons
-    if (todayHeader) todayHeader.classList.add('hidden');
 
     // Show workout selector
     if (workoutSelector) workoutSelector.classList.remove('hidden');
