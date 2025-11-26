@@ -20,7 +20,20 @@ export async function showDashboard() {
         return;
     }
 
-    // Show dashboard, hide other sections
+    // Hide all other sections
+    const workoutSelector = document.getElementById('workout-selector');
+    const activeWorkout = document.getElementById('active-workout');
+    const historySection = document.getElementById('workout-history-section');
+
+    if (workoutSelector) workoutSelector.classList.add('hidden');
+    if (activeWorkout) activeWorkout.classList.add('hidden');
+    if (historySection) historySection.classList.add('hidden');
+
+    // Show legacy header for dashboard (has navigation buttons)
+    const todayHeader = document.querySelector('.today-header');
+    if (todayHeader) todayHeader.classList.remove('hidden');
+
+    // Show dashboard
     dashboardSection.classList.remove('hidden');
 
     // Check for in-progress workout

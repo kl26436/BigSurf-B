@@ -63,10 +63,14 @@ export async function startWorkout(workoutType) {
     const activeWorkout = document.getElementById('active-workout');
     const workoutManagement = document.getElementById('workout-management');
     const historySection = document.getElementById('workout-history-section');
-    
+    const dashboard = document.getElementById('dashboard');
+    const todayHeader = document.querySelector('.today-header');
+
     if (workoutSelector) workoutSelector.classList.add('hidden');
     if (workoutManagement) workoutManagement.classList.add('hidden');
     if (historySection) historySection.classList.add('hidden');
+    if (dashboard) dashboard.classList.add('hidden');
+    if (todayHeader) todayHeader.classList.add('hidden');
     if (activeWorkout) activeWorkout.classList.remove('hidden');
     
     // Start duration timer
@@ -183,6 +187,10 @@ export function continueInProgressWorkout() {
         const section = document.getElementById(sectionId);
         if (section) section.classList.add('hidden');
     });
+
+    // Hide legacy header
+    const todayHeader = document.querySelector('.today-header');
+    if (todayHeader) todayHeader.classList.add('hidden');
 
     const activeWorkout = document.getElementById('active-workout');
     if (activeWorkout) activeWorkout.classList.remove('hidden');

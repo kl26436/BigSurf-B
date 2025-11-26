@@ -29,20 +29,27 @@ export function closeExerciseManager() {
     const workoutSelector = document.getElementById('workout-selector');
     if (workoutSelector && !workoutSelector.classList.contains('hidden')) {
         workoutSelector.classList.add('hidden');
+        console.log('✅ Legacy workout selector hidden');
     }
 
-    // Check which section should be visible
-    const dashboardSection = document.getElementById('dashboard');
-    const workoutSection = document.getElementById('active-workout');
+    // Ensure we're showing the dashboard
+    const dashboard = document.getElementById('dashboard');
+    const activeWorkout = document.getElementById('active-workout');
     const historySection = document.getElementById('workout-history-section');
 
-    // If no other section is visible, default to dashboard
-    const anyVisible = dashboardSection && !dashboardSection.classList.contains('hidden') ||
-                      workoutSection && !workoutSection.classList.contains('hidden') ||
-                      historySection && !historySection.classList.contains('hidden');
+    // Check if we're in an active workout - if so, don't navigate away
+    const inActiveWorkout = activeWorkout && !activeWorkout.classList.contains('hidden');
 
-    if (!anyVisible && dashboardSection) {
-        dashboardSection.classList.remove('hidden');
+    if (!inActiveWorkout) {
+        // Hide all other sections
+        if (activeWorkout) activeWorkout.classList.add('hidden');
+        if (historySection) historySection.classList.add('hidden');
+
+        // Show dashboard
+        if (dashboard && dashboard.classList.contains('hidden')) {
+            dashboard.classList.remove('hidden');
+            console.log('✅ Dashboard shown');
+        }
     }
 }
 
