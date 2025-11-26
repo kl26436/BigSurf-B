@@ -286,18 +286,20 @@ window.useTemplateFromManagement = useTemplateFromManagement;
 window.copyTemplateToCustom = copyTemplateToCustom;
 window.deleteCustomTemplate = deleteCustomTemplate;
 window.showTemplatesByCategory = function(category) {
+    // Fix: Match on workout.type OR workout.category
     const filteredWorkouts = window.AppState.workoutPlans.filter(workout => {
-        return workout.category && workout.category.toLowerCase() === category.toLowerCase();
+        const workoutCategory = (workout.category || workout.type || '').toLowerCase();
+        return workoutCategory === category.toLowerCase();
     });
-    
-    console.log(`Found ${filteredWorkouts.length} workouts for category "${category}"`);
-    
+
+    console.log(`Found ${filteredWorkouts.length} workouts for category "${category}"`, filteredWorkouts);
+
     // Remove any existing modal first
     const existingModal = document.getElementById('template-selection-modal');
     if (existingModal) {
         existingModal.remove();
     }
-    
+
     // Create completely new modal
     const modal = document.createElement('div');
     modal.id = 'template-selection-modal';
@@ -313,7 +315,7 @@ window.showTemplatesByCategory = function(category) {
         justify-content: center;
         z-index: 1000;
     `;
-    
+
     const content = document.createElement('div');
     content.style.cssText = `
         background: #161b22;
@@ -324,12 +326,13 @@ window.showTemplatesByCategory = function(category) {
         overflow-y: auto;
         border: 1px solid #30363d;
     `;
-    
-    // Create header
+
+    // Create header - capitalize first letter properly
     const header = document.createElement('div');
     header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;';
+    const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
     header.innerHTML = `
-        <h3 style="margin: 0; color: #c9d1d9;">${category} Workouts</h3>
+        <h3 style="margin: 0; color: #c9d1d9;">${categoryDisplay} Workouts</h3>
         <button onclick="closeTemplateModal()" style="background: none; border: none; color: #8b949e; font-size: 1.5rem; cursor: pointer;">×</button>
     `;
     

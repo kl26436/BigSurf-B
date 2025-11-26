@@ -223,9 +223,7 @@ export function clearExerciseFilters() {
 
 // Refresh exercise library
 export function refreshExerciseLibrary() {
-    showNotification('Refreshing exercises...', 'info');
     loadExercises();
-    showNotification('Exercises refreshed!', 'success');
 }
 
 // Show add exercise modal
@@ -301,20 +299,20 @@ export async function saveExercise(event) {
     };
 
     if (!formData.name) {
-        showNotification('Please enter an exercise name', 'warning');
+        alert('Please enter an exercise name');
         return;
     }
 
     try {
         // TODO: Implement actual save to Firebase using FirebaseWorkoutManager
-        showNotification(`Exercise "${formData.name}" saved! (Firebase integration pending)`, 'info');
+        console.log(`✅ Exercise "${formData.name}" saved (Firebase integration pending)`);
 
         closeAddExerciseModal();
         await refreshExerciseLibrary();
 
     } catch (error) {
         console.error('❌ Error saving exercise:', error);
-        showNotification('Error saving exercise', 'error');
+        alert('Error saving exercise');
     }
 }
 
@@ -335,7 +333,7 @@ export async function deleteExercise(exerciseId) {
     if (confirm(confirmMessage)) {
         try {
             // TODO: Implement actual delete using FirebaseWorkoutManager
-            showNotification(`Exercise "${exercise.name}" removed! (Firebase integration pending)`, 'info');
+            console.log(`✅ Exercise "${exercise.name}" removed (Firebase integration pending)`);
 
             // Remove from local array for now
             allExercises = allExercises.filter(ex => ex.id !== exerciseId);
@@ -343,7 +341,7 @@ export async function deleteExercise(exerciseId) {
 
         } catch (error) {
             console.error('❌ Error deleting exercise:', error);
-            showNotification('Error processing request', 'error');
+            alert('Error processing request');
         }
     }
 }

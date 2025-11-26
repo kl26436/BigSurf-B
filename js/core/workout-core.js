@@ -13,7 +13,7 @@ export async function startWorkout(workoutType) {
     console.log(`🚀 Starting workout: ${workoutType}`);
 
     if (!AppState.currentUser) {
-        showNotification('Please sign in to start a workout', 'warning');
+        alert('Please sign in to start a workout');
         return;
     }
 
@@ -34,7 +34,9 @@ export async function startWorkout(workoutType) {
     );
 
     if (!workout) {
-        showNotification(`Workout "${workoutType}" not found`, 'error');
+        console.error(`❌ Workout "${workoutType}" not found in workoutPlans`);
+        console.log('Available workouts:', AppState.workoutPlans.map(p => p.day || p.name));
+        alert(`Workout "${workoutType}" not found. Please check the console for details.`);
         return;
     }
 
@@ -85,15 +87,15 @@ export async function startWorkout(workoutType) {
 
 export function pauseWorkout() {
     if (!AppState.currentWorkout) return;
-    
+
     // Save current state
     AppState.savedData.pausedAt = new Date().toISOString();
     saveWorkoutData(AppState);
-    
+
     // Stop timers
     AppState.clearTimers();
-    
-    showNotification('Workout paused', 'info');
+
+    console.log('⏸️ Workout paused');
 }
 
 export async function completeWorkout() {
@@ -113,7 +115,7 @@ export async function completeWorkout() {
     const { PRTracker } = await import('./pr-tracker.js');
     await PRTracker.processWorkoutForPRs(AppState.savedData);
 
-    showNotification('Workout completed! Great job!', 'success');
+    console.log('✅ Workout completed!');
 
     // Reset state BEFORE showing selector (critical order!)
     AppState.reset();
@@ -138,7 +140,7 @@ export function cancelWorkout() {
     // Clear in-progress workout since it's been cancelled
     window.inProgressWorkout = null;
 
-    showNotification('Workout cancelled', 'info');
+    console.log('❌ Workout cancelled');
 
     // Navigate to dashboard instead of legacy workout selector
     import('./navigation.js').then(({ navigateTo }) => {
@@ -163,7 +165,7 @@ export function continueInProgressWorkout() {
     if (banner) banner.classList.add('hidden');
     window.showingProgressPrompt = false;
     if (!window.inProgressWorkout) {
-        showNotification('No in-progress workout found', 'warning');
+        console.log('⚠️ No in-progress workout found');
         return;
     }
     
@@ -199,8 +201,8 @@ export function continueInProgressWorkout() {
     // DON'T clear this - keep it so we can resume again if user navigates away
     // It will be cleared when workout is completed or cancelled
     // window.inProgressWorkout = null;
-    
-    showNotification('Resumed workout!', 'success');
+
+    console.log('▶️ Workout resumed');
 }
 
 export async function discardInProgressWorkout() {
@@ -263,12 +265,12 @@ export async function discardInProgressWorkout() {
         // Show workout selector
         showWorkoutSelector();
         
-        showNotification('In-progress workout discarded', 'info');
+        console.log('✅ In-progress workout discarded');
         console.log('✅ Discard process completed successfully');
         
     } catch (error) {
         console.error('âŒ Error during discard process:', error);
-        showNotification('Error discarding workout. Please try again.', 'error');
+        alert('Error discarding workout. Please try again.');
     }
 }
 
@@ -630,7 +632,7 @@ export async function updateSet(exerciseIndex, setIndex, field, value) {
 
         // Only show generic notification if it's not a PR
         if (!isPR) {
-            showNotification(`Set ${setIndex + 1} recorded`, 'success');
+            console.log(`✅ Set ${setIndex + 1} recorded`);
         }
     }
 }
@@ -705,7 +707,7 @@ async function checkSetForPR(exerciseIndex, setIndex) {
                     prMessage += `First time doing ${exerciseName}!`;
                 }
 
-                showNotification(prMessage, 'success');
+                console.log(prMessage);
                 console.log(`🏆 PR detected for ${exerciseName}:`, prCheck);
             }
 
@@ -726,7 +728,7 @@ export function addSet(exerciseIndex) {
         (AppState.currentWorkout.exercises[exerciseIndex].sets || 3) + 1;
     
     renderExercises();
-    showNotification('Set added', 'success');
+    console.log('✅ Set added');
 
     const setData = AppState.savedData.exercises[exerciseKey].sets[setIndex];
     if (setData.reps && setData.weight) {
@@ -743,7 +745,7 @@ export function deleteSet(exerciseIndex, setIndex) {
         AppState.savedData.exercises[exerciseKey].sets.splice(setIndex, 1);
         saveWorkoutData(AppState);
         renderExercises();
-        showNotification('Set deleted', 'info');
+        console.log('✅ Set deleted');
     }
 }
 
@@ -761,7 +763,7 @@ export function saveExerciseNotes(exerciseIndex) {
     AppState.savedData.exercises[exerciseKey].notes = notesTextarea.value;
     saveWorkoutData(AppState);
     
-    showNotification('Notes saved', 'success');
+    console.log('✅ Notes saved');
 }
 
 export function markExerciseComplete(exerciseIndex) {
@@ -793,7 +795,7 @@ export function markExerciseComplete(exerciseIndex) {
     const modal = document.getElementById('exercise-modal');
     if (modal) modal.classList.add('hidden');
     
-    showNotification(`${exercise.machine} marked complete!`, 'success');
+    console.log(`✅ ${exercise.machine} marked complete!`);
 }
 
 function markSetComplete(exerciseIndex, setIndex) {
@@ -825,7 +827,6 @@ export function deleteExerciseFromWorkout(exerciseIndex) {
         
         saveWorkoutData(AppState);
         renderExercises();
-        showNotification(`Removed "${exerciseName}" from workout`, 'info');
     }
 }
 
@@ -835,12 +836,12 @@ export function deleteExerciseFromWorkout(exerciseIndex) {
 
 export function addExerciseToActiveWorkout() {
     if (!AppState.currentWorkout) {
-        showNotification('No active workout', 'warning');
+        console.log('⚠️ No active workout');
         return;
     }
     
     if (!AppState.currentUser) {
-        showNotification('Please sign in to add exercises', 'warning');
+        alert('Please sign in to add exercises');
         return;
     }
     
@@ -849,7 +850,7 @@ export function addExerciseToActiveWorkout() {
         window.exerciseLibrary.openForWorkoutAdd();
     } else {
         console.log('📚 Using fallback method to open exercise library');
-        showNotification('Exercise library opened - select exercises manually', 'info');
+        console.log('Exercise library opened');
     }
 }
 
@@ -889,7 +890,6 @@ export function confirmExerciseAddToWorkout(exerciseData) {
         window.exerciseLibrary.close();
     }
     
-    showNotification(`Added "${newExercise.machine}" to workout!`, 'success');
 }
 
 // REMOVED: swapExercise() and confirmExerciseSwap() - Replaced by delete + add workflow
@@ -946,7 +946,7 @@ export function skipModalRestTimer(exerciseIndex) {
     if (modalTimer && modalTimer.timerData && modalTimer.timerData.skip) {
         modalTimer.timerData.skip();
     }
-    showNotification('Rest timer skipped', 'info');
+    console.log('⏭️ Rest timer skipped');
 }
 
 function startModalRestTimer(exerciseIndex, duration = 90) {
@@ -1048,7 +1048,7 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
                     '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
             }
             
-            showNotification(isPaused ? 'Timer paused' : 'Timer resumed', 'info');
+            console.log(isPaused ? '⏸️ Timer paused' : '▶️ Timer resumed');
         },
         
         skip: () => {
@@ -1311,14 +1311,14 @@ export function showExerciseVideo(videoUrl, exerciseName) {
     
     // Check if it's a valid URL (not a placeholder)
     if (!embedUrl || embedUrl.includes('example') || embedUrl === videoUrl && !embedUrl.includes('youtube')) {
-        showNotification('No form video available for this exercise', 'info');
+        console.log('ℹ️ No form video available for this exercise');
         return;
     }
     
     iframe.src = embedUrl;
     videoSection.classList.remove('hidden');
     
-    showNotification(`Showing form video for ${exerciseName}`, 'success');
+    console.log(`📹 Showing form video for ${exerciseName}`);
 }
 
 export function hideExerciseVideo() {
@@ -1421,7 +1421,7 @@ export function setExerciseUnit(exerciseIndex, unit) {
     // Save unit preference (weights unchanged)
     saveWorkoutData(AppState);
     
-    showNotification(`Switched to ${unit.toUpperCase()} for this exercise`, 'success');
+    console.log(`🔄 Switched to ${unit.toUpperCase()} for this exercise`);
 }
 
 // ===================================================================
