@@ -1106,15 +1106,18 @@ body {
 
 /* Collapsed completed exercises */
 .exercise-card.completed.collapsed {
-    padding: 0.75rem 1rem;
-    max-height: 60px;
+    padding: 0.5rem 0.75rem;
+    max-height: 50px;
 }
 
 .exercise-card.completed.collapsed .exercise-table,
 .exercise-card.completed.collapsed .exercise-actions,
 .exercise-card.completed.collapsed .exercise-notes-section,
-.exercise-card.completed.collapsed .exercise-hint {
-    display: none;
+.exercise-card.completed.collapsed .exercise-hint,
+.exercise-card.completed.collapsed .exercise-sets-preview,
+.exercise-card.completed.collapsed .exercise-meta,
+.exercise-card.completed.collapsed .exercise-unit-toggle-mini {
+    display: none !important;
 }
 
 .exercise-card.completed .exercise-header {
@@ -2574,20 +2577,20 @@ body {
     color: var(--bg-primary);
 }
 
-/* Rest Timer Sticky */
+/* Rest Timer Sticky - Ultra Compact */
 .rest-timer-sticky {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     background: var(--bg-secondary);
-    border: 2px solid var(--primary);
-    border-radius: 12px;
-    padding: 1rem;
+    border: 1px solid var(--primary);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
     z-index: 1000;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transform: translateX(100%);
     transition: transform 0.3s ease;
-    min-width: 200px;
+    min-width: 100px;
 }
 
 .rest-timer-sticky:not(.active) {
@@ -2603,24 +2606,19 @@ body {
 }
 
 .rest-timer-exercise {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    display: none; /* Hide exercise name to save space */
 }
 
 .rest-timer-display {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: bold;
     color: var(--primary);
-    margin: 0.5rem 0;
+    margin: 0;
+    line-height: 1;
 }
 
 .rest-timer-controls {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    margin-top: 0.5rem;
+    display: none; /* Hide controls to save space - just show timer */
 }
 
 /* Exercise Video Section */
