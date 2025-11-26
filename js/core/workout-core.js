@@ -1051,7 +1051,7 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
                 cancelAnimationFrame(modalTimer.timerData.animationFrame);
             }
             modalTimer.classList.add('hidden');
-            timerDisplay.style.color = 'var(--text-primary)';
+            timerDisplay.style.color = '#000000';
             modalTimer.timerData = null;
         }
     };
@@ -1078,7 +1078,7 @@ function clearModalRestTimer(exerciseIndex) {
     // Reset display
     const timerDisplay = modalTimer.querySelector('.modal-rest-display');
     if (timerDisplay) {
-        timerDisplay.style.color = 'var(--text-primary)';
+        timerDisplay.style.color = '#000000';
     }
     
     // Reset pause button
@@ -1192,7 +1192,7 @@ function restoreModalRestTimer(exerciseIndex, timerState) {
                 cancelAnimationFrame(modalTimer.timerData.animationFrame);
             }
             modalTimer.classList.add('hidden');
-            timerDisplay.style.color = 'var(--text-primary)';
+            timerDisplay.style.color = '#000000';
             modalTimer.timerData = null;
         }
     };
@@ -1214,7 +1214,7 @@ function stopModalRestTimer(exerciseIndex) {
     // Reset display color
     const timerDisplay = modalTimer.querySelector('.modal-rest-display');
     if (timerDisplay) {
-        timerDisplay.style.color = 'var(--text-primary)';
+        timerDisplay.style.color = '#000000';
     }
     
     // Reset pause button
