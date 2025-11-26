@@ -1,7 +1,7 @@
 // Big Surf Workout Tracker - Service Worker
 // Provides basic offline functionality and faster loading
 
-const CACHE_NAME = 'big-surf-v2.2-streak-fix';
+const CACHE_NAME = 'big-surf-v2.3-network-first-js';
 const STATIC_ASSETS = [
   '/index.html',
   '/style.css',
@@ -80,7 +80,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache first strategy for static assets
+  // Network first for JavaScript files (always get fresh code)
+  if (event.request.url.endsWith('.js')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          // Cache the fresh JS file
+          if (networkResponse && networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => cache.put(event.request, responseToCache));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          // Fallback to cache if offline
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
+  // Cache first strategy for static assets (CSS, images, etc.)
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
