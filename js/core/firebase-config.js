@@ -22,6 +22,11 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const provider = new GoogleAuthProvider();
 
+// Force account selection on sign-in (don't auto-select last account)
+provider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 // Re-export Firebase functions for easy importing
 export {
   doc, setDoc, getDoc, deleteDoc, collection, query, where, getDocs, orderBy, limit, onSnapshot,

@@ -172,6 +172,12 @@ export async function signOutUser() {
         await signOut(auth);
         console.log('✅ Sign-out successful');
 
+        // Close hamburger menu
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('active');
+
         // Hide all content sections
         const sections = [
             'workout-selector',
@@ -187,13 +193,20 @@ export async function signOutUser() {
             if (section) section.classList.add('hidden');
         });
 
+        // Hide resume workout banner if showing
+        const resumeBanner = document.getElementById('resume-workout-banner');
+        if (resumeBanner) resumeBanner.classList.add('hidden');
+
         // Show auth section
         hideUserInfo();
 
-        // Clear app state
+        // Clear app state completely
         AppState.currentUser = null;
         AppState.currentWorkout = null;
         AppState.savedData = {};
+        AppState.workoutStartTime = null;
+        AppState.workoutPauseStartTime = null;
+        AppState.totalPausedTime = 0;
         window.inProgressWorkout = null;
 
         showNotification('Signed out successfully', 'info');
