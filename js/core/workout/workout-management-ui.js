@@ -144,9 +144,41 @@ export function createNewTemplate() {
     showTemplateEditor();
 }
 
-export function editTemplate(templateId) {
-    // This would load the template from the stored templates
-    showNotification('Edit template functionality coming soon!', 'info');
+export async function editTemplate(templateId) {
+    console.log('📝 Loading template for editing:', templateId);
+
+    try {
+        // Load all templates to find the one we want to edit
+        const templates = await workoutManager.getUserWorkoutTemplates();
+        const template = templates.find(t => t.id === templateId);
+
+        if (!template) {
+            console.error('❌ Template not found:', templateId);
+            alert('Template not found');
+            return;
+        }
+
+        // Check if this is a default template (can't edit defaults)
+        if (template.isDefault) {
+            alert('Default templates cannot be edited. Please create a copy instead.');
+            return;
+        }
+
+        // Set as current editing template (make a copy to avoid mutating original)
+        currentEditingTemplate = {
+            id: template.id,
+            name: template.name || template.day,
+            category: template.category || template.type || 'other',
+            exercises: [...template.exercises]
+        };
+
+        console.log('✅ Template loaded for editing:', currentEditingTemplate);
+        showTemplateEditor();
+
+    } catch (error) {
+        console.error('❌ Error loading template for editing:', error);
+        alert('Error loading template for editing');
+    }
 }
 
 export function deleteTemplate(templateId) {
