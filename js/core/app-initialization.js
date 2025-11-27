@@ -197,9 +197,8 @@ export async function signIn() {
 
 export async function signOutUser() {
     try {
-        manualSignOut = true; // Flag to prevent auth listener from interfering
-        await signOut(auth);
-        console.log('✅ Sign-out successful');
+        // Set flag BEFORE calling signOut to prevent auth listener from running
+        manualSignOut = true;
 
         // Close hamburger menu
         const sidebar = document.getElementById('sidebar');
@@ -233,9 +232,16 @@ export async function signOutUser() {
 
         // Show loading screen with sign-in prompt (same as fresh page load)
         const loadingScreen = document.getElementById('loading-screen');
-        if (loadingScreen) loadingScreen.classList.remove('hidden');
+        if (loadingScreen) {
+            loadingScreen.classList.remove('hidden');
+            loadingScreen.style.opacity = '1';
+        }
 
         showSignInPrompt();
+
+        // NOW sign out (auth listener will skip UI updates due to flag)
+        await signOut(auth);
+        console.log('✅ Sign-out successful');
 
         // Clear app state completely
         AppState.currentUser = null;
