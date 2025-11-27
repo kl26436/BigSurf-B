@@ -393,11 +393,6 @@ export function createExerciseCard(exercise, index) {
                 <button class="exercise-focus-btn" onclick="focusExercise(${index})" title="Open exercise details">
                     <i class="fas fa-expand-alt"></i>
                 </button>
-                ${exercise.video ? `
-                    <button class="btn btn-success btn-small" onclick="showExerciseVideo('${exercise.video}', '${exercise.machine}')" title="Show form video">
-                        <i class="fas fa-play"></i>
-                    </button>
-                ` : ''}
             </div>
         </div>
         <div class="exercise-sets-preview">

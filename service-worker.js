@@ -1,7 +1,7 @@
 // Big Surf Workout Tracker - Service Worker
 // Provides basic offline functionality and faster loading
 
-const CACHE_NAME = 'big-surf-v3.26-cardio-name-fix';
+const CACHE_NAME = 'big-surf-v3.27-ui-fix-play-button';
 const STATIC_ASSETS = [
   '/index.html',
   '/style.css',
