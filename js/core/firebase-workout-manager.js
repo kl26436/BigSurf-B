@@ -136,8 +136,7 @@ export class FirebaseWorkoutManager {
             
             await setDoc(docRef, overrideData);
             
-            console.log(` User override created for "${exerciseData.name}"`);
-            showNotification(`Modified "${exerciseData.name}" (your personal version)`, 'success');
+            console.log(`✅ User override created for "${exerciseData.name}"`);
             
             return overrideId;
             
@@ -163,8 +162,7 @@ export class FirebaseWorkoutManager {
             
             await setDoc(docRef, updateData, { merge: true });
             
-            console.log(` User override updated: ${exerciseData.name}`);
-            showNotification(`Updated "${exerciseData.name}" (your version)`, 'success');
+            console.log(`✅ User override updated: ${exerciseData.name}`);
             
             return overrideId;
             
@@ -255,15 +253,15 @@ export class FirebaseWorkoutManager {
             if (exerciseData.isOverride) {
                 // Delete user override (reverts to default)
                 await this.deleteUserOverride(exerciseId);
-                showNotification(`Reverted "${exerciseData.name}" to default version`, 'success');
+                console.log(`✅ Reverted "${exerciseData.name}" to default version`);
             } else if (exerciseData.isCustom) {
                 // Delete custom exercise
                 await this.deleteCustomExercise(exerciseId);
-                showNotification(`Deleted custom exercise "${exerciseData.name}"`, 'success');
+                console.log(`✅ Deleted custom exercise "${exerciseData.name}"`);
             } else if (exerciseData.isDefault) {
                 // Hide default exercise
                 await this.hideDefaultExercise(exerciseId, exerciseData);
-                showNotification(`Hidden "${exerciseData.name}" from your library`, 'info');
+                console.log(`✅ Hidden "${exerciseData.name}" from your library`);
             }
             
             return true;
@@ -446,8 +444,7 @@ export class FirebaseWorkoutManager {
             await setDoc(docRef, exerciseToSave);
             
             const action = isEditing ? 'Updated' : 'Created';
-            console.log(` ${action} custom exercise: ${exerciseData.name}`);
-            showNotification(`${action} "${exerciseData.name}"`, 'success');
+            console.log(`✅ ${action} custom exercise: ${exerciseData.name}`);
             
             return exerciseId;
             
@@ -693,9 +690,8 @@ async getGlobalDefaultTemplates() {
             
             await setDoc(docRef, templateToSave);
             
-            console.log(` Workout template "${templateData.name}" saved`);
-            showNotification(`Workout template "${templateData.name}" saved!`, 'success');
-            
+            console.log(`✅ Workout template "${templateData.name}" saved`);
+
             return templateId;
             
         } catch (error) {
@@ -721,9 +717,8 @@ async getGlobalDefaultTemplates() {
             
             await setDoc(docRef, updateData, { merge: true });
             
-            console.log(` Workout template updated: ${templateId}`);
-            showNotification(`Template "${templateData.name}" updated!`, 'success');
-            
+            console.log(`✅ Workout template updated: ${templateId}`);
+
             return true;
             
         } catch (error) {
@@ -742,9 +737,8 @@ async getGlobalDefaultTemplates() {
             const docRef = doc(this.db, "users", this.appState.currentUser.uid, "workoutTemplates", templateId);
             await deleteDoc(docRef);
             
-            console.log(` Workout template deleted: ${templateId}`);
-            showNotification('Workout template deleted', 'success');
-            
+            console.log(`✅ Workout template deleted: ${templateId}`);
+
             return true;
             
         } catch (error) {

@@ -314,7 +314,7 @@ function selectExerciseGeneric(exerciseDataOrName, exerciseJson) {
         }
         
         // Show selection feedback
-        showNotification(`Selected "${exercise.name || exercise.machine}"`, 'success');
+        console.log(`✅ Selected "${exercise.name || exercise.machine}"`);
         
     } catch (error) {
         console.error('Error in selectExerciseGeneric:', error);

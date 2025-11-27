@@ -192,9 +192,9 @@ export async function submitManualWorkout() {
         
         // Use the date as the document ID for consistency
         await workoutManager.saveWorkoutData(workoutData);
-        
-        showNotification(`Manual workout "${currentManualWorkout.name}" added successfully!`, 'success');
-        
+
+        console.log(`✅ Manual workout "${currentManualWorkout.name}" added successfully!`);
+
         // Close modal and reset
         closeAddManualWorkoutModal();
         
@@ -280,7 +280,7 @@ export function addExerciseToManualWorkout() {
         window.exerciseLibrary.openForManualWorkout();
     } else {
         console.log('📚 Using fallback method to open exercise library');
-        showNotification('Exercise library opened - select exercises manually', 'info');
+        console.log('📚 Exercise library opened');
     }
 }
 
@@ -321,8 +321,8 @@ export function addToManualWorkoutFromLibrary(exerciseData) {
         if (window.exerciseLibrary && window.exerciseLibrary.close) {
             window.exerciseLibrary.close();
         }
-        
-        showNotification(`Added "${exerciseEntry.name}" to manual workout!`, 'success');
+
+        console.log(`✅ Added "${exerciseEntry.name}" to manual workout`);
         
     } catch (error) {
         console.error('Error adding exercise to manual workout:', error);
@@ -360,7 +360,7 @@ export function removeManualExercise(index) {
     if (confirm(`Remove "${exercise.name}" from this workout?`)) {
         currentManualWorkout.exercises.splice(index, 1);
         renderManualExerciseList();
-        showNotification(`Removed "${exercise.name}" from workout`, 'info');
+        console.log(`🗑️ Removed "${exercise.name}" from workout`);
     }
 }
 
@@ -402,7 +402,7 @@ export function updateManualExerciseNotes(exerciseIndex) {
     const exercise = currentManualWorkout.exercises[exerciseIndex];
     if (exercise) {
         exercise.notes = notesInput.value;
-        showNotification('Notes updated', 'success');
+        console.log('✅ Notes updated');
     }
 }
 
@@ -421,7 +421,7 @@ export function addSetToManualExercise(exerciseIndex) {
     }
     
     renderManualExerciseList();
-    showNotification('Set added', 'success');
+    console.log('✅ Set added');
 }
 
 export function removeSetFromManualExercise(exerciseIndex, setIndex) {
@@ -438,7 +438,7 @@ export function removeSetFromManualExercise(exerciseIndex, setIndex) {
     }
     
     renderManualExerciseList();
-    showNotification('Set removed', 'info');
+    console.log('🗑️ Set removed');
 }
 
 export function markManualExerciseComplete(exerciseIndex) {
@@ -457,9 +457,9 @@ export function markManualExerciseComplete(exerciseIndex) {
     }
     
     renderManualExerciseList();
-    
+
     const status = exercise.manuallyCompleted ? 'completed' : 'incomplete';
-    showNotification(`Exercise marked as ${status}`, 'success');
+    console.log(`✅ Exercise marked as ${status}`);
 }
 
 // ===================================================================
