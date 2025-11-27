@@ -156,7 +156,24 @@ export async function signIn() {
 
         const result = await signInWithPopup(auth, signInProvider);
         console.log('✅ Sign-in successful:', result.user.displayName);
-        // Welcome message removed - loading screen will show "Loading your workouts..." instead
+
+        // Show loading screen with initialization message
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingMessage = document.getElementById('loading-message');
+        if (loadingScreen) {
+            loadingScreen.classList.remove('hidden');
+            loadingScreen.style.opacity = '1';
+        }
+        if (loadingMessage) {
+            loadingMessage.textContent = 'Initializing...';
+            loadingMessage.style.display = 'block';
+        }
+
+        // Hide sign-in prompt, show spinner
+        const signInPrompt = document.getElementById('loading-signin-prompt');
+        const loadingSpinner = document.querySelector('.loading-spinner');
+        if (signInPrompt) signInPrompt.classList.add('hidden');
+        if (loadingSpinner) loadingSpinner.style.display = 'block';
     } catch (error) {
         console.error('❌ Sign-in error:', error);
         console.error('❌ Error code:', error.code);
@@ -347,9 +364,15 @@ export function setupAuthenticationListener() {
                 if (section) section.classList.add('hidden');
             });
 
-            // Show sign-in prompt
+            // Hide header auth section
+            const authSection = document.getElementById('auth-section');
+            if (authSection) authSection.classList.add('hidden');
+
+            // Show loading screen with sign-in prompt
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) loadingScreen.classList.remove('hidden');
+
             showSignInPrompt();
-            hideUserInfo();
         }
     });
 }
