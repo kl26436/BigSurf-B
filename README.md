@@ -5,6 +5,10 @@ A modern, client-side workout tracking web application with Firebase backend. Tr
 ![Version](https://img.shields.io/badge/version-2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+## 🌐 Live Demo
+
+**[https://bigsurf.fit](https://bigsurf.fit)** - Try it now with your Google account!
+
 ## ✨ Features
 
 - **🔐 Google Authentication** - Secure sign-in with Google accounts
