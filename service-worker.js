@@ -1,7 +1,7 @@
 // Big Surf Workout Tracker - Service Worker
 // Provides basic offline functionality and faster loading
 
-const CACHE_NAME = 'big-surf-v3.15-fix-signout-ui-consistency';
+const CACHE_NAME = 'big-surf-v3.16-fix-custom-workout-day-field';
 const STATIC_ASSETS = [
   '/index.html',
   '/style.css',

@@ -42,7 +42,7 @@ export async function saveWorkoutData(state) {
         
         // Store the complete workout structure for reconstruction
         state.savedData.originalWorkout = {
-            day: state.currentWorkout.day,
+            day: state.currentWorkout.day || state.currentWorkout.name,
             exercises: state.currentWorkout.exercises.map(ex => ({
                 machine: ex.machine || ex.name,
                 sets: ex.sets,
