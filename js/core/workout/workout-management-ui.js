@@ -145,32 +145,47 @@ export function createNewTemplate() {
     showTemplateEditor();
 }
 
-export async function editTemplate(templateId) {
-    console.log('📝 Loading template for editing:', templateId);
+export async function editTemplate(templateId, isDefault = false) {
+    console.log('📝 Loading template for editing:', templateId, 'isDefault:', isDefault);
 
     try {
-        // Load all templates to find the one we want to edit
-        const templates = await workoutManager.getUserWorkoutTemplates();
-        const template = templates.find(t => t.id === templateId);
+        // Load all templates including raw defaults
+        const { FirebaseWorkoutManager } = await import('../firebase-workout-manager.js');
+        const manager = new FirebaseWorkoutManager(AppState);
 
-        if (!template) {
-            console.error('❌ Template not found:', templateId);
-            alert('Template not found');
-            return;
+        let template;
+
+        if (isDefault) {
+            // Load the default template directly
+            const allDefaults = await manager.getGlobalDefaultTemplates();
+            template = allDefaults.find(t => (t.id || t.day) === templateId);
+
+            if (!template) {
+                console.error('❌ Default template not found:', templateId);
+                alert('Default template not found');
+                return;
+            }
+        } else {
+            // Load from user templates
+            const templates = await manager.getUserWorkoutTemplates();
+            template = templates.find(t => t.id === templateId);
+
+            if (!template) {
+                console.error('❌ Template not found:', templateId);
+                alert('Template not found');
+                return;
+            }
         }
 
-        // Check if this is a default template (can't edit defaults)
-        if (template.isDefault) {
-            alert('Default templates cannot be edited. Please create a copy instead.');
-            return;
-        }
-
-        // Set as current editing template (make a copy to avoid mutating original)
+        // Set as current editing template (deep clone to avoid mutations)
         currentEditingTemplate = {
-            id: template.id,
+            id: template.id || template.day,
             name: template.name || template.day,
             category: template.category || template.type || 'other',
-            exercises: [...template.exercises]
+            exercises: JSON.parse(JSON.stringify(template.exercises || [])),
+            suggestedDays: template.suggestedDays || [],
+            overridesDefault: isDefault ? (template.id || template.day) : template.overridesDefault,
+            isEditingDefault: isDefault
         };
 
         console.log('✅ Template loaded for editing:', currentEditingTemplate);
@@ -182,24 +197,80 @@ export async function editTemplate(templateId) {
     }
 }
 
-export async function deleteTemplate(templateId) {
+export async function deleteTemplate(templateId, isDefault = false) {
     if (!workoutManager) {
         console.error('❌ Workout manager not initialized');
-        alert('Cannot delete template: System not ready');
+        alert('Cannot perform action: System not ready');
         return;
     }
 
-    if (confirm('Are you sure you want to delete this template? This cannot be undone.')) {
-        try {
-            console.log('🗑️ Deleting template:', templateId);
-            await workoutManager.deleteWorkoutTemplate(templateId);
-            console.log('✅ Template deleted successfully');
+    const action = isDefault ? 'hide' : 'delete';
+    const message = isDefault
+        ? 'Hide this template? You can restore it later by clicking "Reset".'
+        : 'Delete this template? This cannot be undone.';
 
-            // Reload the template list
-            switchTemplateCategory('custom');
+    if (confirm(message)) {
+        try {
+            if (isDefault) {
+                // Create a "hidden" marker for this default template
+                console.log('🙈 Hiding default template:', templateId);
+                const hiddenMarker = {
+                    id: `hidden_${templateId}`,
+                    overridesDefault: templateId,
+                    isHidden: true,
+                    hiddenAt: new Date().toISOString()
+                };
+                await workoutManager.saveWorkoutTemplate(hiddenMarker);
+                console.log('✅ Default template hidden');
+            } else {
+                // Actually delete the custom template
+                console.log('🗑️ Deleting custom template:', templateId);
+                await workoutManager.deleteWorkoutTemplate(templateId);
+                console.log('✅ Template deleted successfully');
+            }
+
+            // Reload AppState and UI
+            AppState.workoutPlans = await workoutManager.getUserWorkoutTemplates();
+            await loadWorkoutTemplates();
+            const { loadTemplatesByCategory } = await import('../template-selection.js');
+            await loadTemplatesByCategory();
+
         } catch (error) {
-            console.error('❌ Error deleting template:', error);
-            alert('Error deleting template. Please try again.');
+            console.error(`❌ Error ${action}ing template:`, error);
+            alert(`Error ${action}ing template. Please try again.`);
+        }
+    }
+}
+
+export async function resetToDefault(defaultTemplateId) {
+    if (!workoutManager) {
+        console.error('❌ Workout manager not initialized');
+        alert('Cannot reset: System not ready');
+        return;
+    }
+
+    if (confirm('Reset this template to default? Your changes will be lost.')) {
+        try {
+            console.log('🔄 Resetting template to default:', defaultTemplateId);
+
+            // Find and delete the override/hidden marker
+            const templates = await workoutManager.getUserWorkoutTemplates();
+            const override = templates.find(t => t.overridesDefault === defaultTemplateId);
+
+            if (override) {
+                await workoutManager.deleteWorkoutTemplate(override.id);
+                console.log('✅ Reset to default complete');
+
+                // Reload AppState and UI
+                AppState.workoutPlans = await workoutManager.getUserWorkoutTemplates();
+                await loadWorkoutTemplates();
+                const { loadTemplatesByCategory } = await import('../template-selection.js');
+                await loadTemplatesByCategory();
+            }
+
+        } catch (error) {
+            console.error('❌ Error resetting template:', error);
+            alert('Error resetting template. Please try again.');
         }
     }
 }

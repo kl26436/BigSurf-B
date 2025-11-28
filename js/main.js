@@ -52,7 +52,7 @@ import {
     addExerciseToTemplate, editTemplateExercise, removeTemplateExercise,
     openExerciseLibrary, closeExerciseLibrary,
     showCreateExerciseForm, closeCreateExerciseModal, createNewExercise,
-    returnToWorkoutsFromManagement, editTemplate
+    returnToWorkoutsFromManagement, editTemplate, deleteTemplate, resetToDefault
 } from './core/workout/workout-management-ui.js';
 
 // Manual workout functionality
@@ -427,6 +427,8 @@ window.closeCreateExerciseModal = closeCreateExerciseModal;
 window.createNewExercise = createNewExercise;
 window.returnToWorkoutsFromManagement = returnToWorkoutsFromManagement;
 window.editTemplate = editTemplate;
+window.deleteTemplate = deleteTemplate;
+window.resetToDefault = resetToDefault;
 
 // Authentication Functions
 window.signIn = signIn;

@@ -340,18 +340,17 @@ export function createTemplateCard(template, isDefault = false) {
             <button class="btn btn-primary btn-small" onclick="useTemplateFromManagement('${templateId}', ${isDefault})">
                 <i class="fas fa-play"></i> Use Today
             </button>
-            ${isDefault ? `
-                <button class="btn btn-info btn-small" onclick="copyTemplateToCustom('${templateId}')">
-                    <i class="fas fa-copy"></i> Copy to Custom
+            <button class="btn btn-secondary btn-small" onclick="editTemplate('${templateId}', ${isDefault})">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            ${template.overridesDefault ? `
+                <button class="btn btn-warning btn-small" onclick="resetToDefault('${template.overridesDefault}')">
+                    <i class="fas fa-undo"></i> Reset
                 </button>
-            ` : `
-                <button class="btn btn-secondary btn-small" onclick="editTemplate('${templateId}')">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="btn btn-danger btn-small" onclick="deleteCustomTemplate('${templateId}')">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-            `}
+            ` : ''}
+            <button class="btn btn-danger btn-small" onclick="deleteTemplate('${templateId}', ${isDefault})">
+                <i class="fas fa-${isDefault ? 'eye-slash' : 'trash'}"></i> ${isDefault ? 'Hide' : 'Delete'}
+            </button>
         </div>
     `;
 

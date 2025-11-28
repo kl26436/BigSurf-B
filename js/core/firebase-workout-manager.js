@@ -631,34 +631,57 @@ async getGlobalDefaultTemplates() {
 
         async getUserWorkoutTemplates() {
         try {
-            console.log(' Loading all user workout templates...');
-            
+            console.log('🔄 Loading all user workout templates...');
+
             // Load global defaults
             const defaultTemplates = await this.getGlobalDefaultTemplates();
-            
-            // Load user customs (only if signed in)
+
+            // Load user customs and overrides (only if signed in)
             let customTemplates = [];
+            const overriddenDefaultIds = new Set();
+
             if (this.appState.currentUser) {
                 const customTemplatesRef = collection(this.db, "users", this.appState.currentUser.uid, "workoutTemplates");
                 const customSnapshot = await getDocs(customTemplatesRef);
-                
+
                 customSnapshot.forEach((doc) => {
-                    customTemplates.push({ 
-                        id: doc.id, 
-                        ...doc.data(),
+                    const data = doc.data();
+
+                    // Skip hidden templates (they're just markers, not actual templates)
+                    if (data.isHidden) {
+                        // Track which defaults are hidden
+                        if (data.overridesDefault) {
+                            overriddenDefaultIds.add(data.overridesDefault);
+                        }
+                        return;
+                    }
+
+                    customTemplates.push({
+                        id: doc.id,
+                        ...data,
                         isCustom: true,
                         isDefault: false,
                         source: 'user-firebase'
                     });
+
+                    // Track which defaults are overridden
+                    if (data.overridesDefault) {
+                        overriddenDefaultIds.add(data.overridesDefault);
+                    }
                 });
             }
-            
-            const allTemplates = [...defaultTemplates, ...customTemplates];
-            
-            console.log(` getUserWorkoutTemplates: ${defaultTemplates.length} global defaults + ${customTemplates.length} user customs = ${allTemplates.length} total`);
-            
+
+            // Filter out defaults that have been overridden or hidden
+            const visibleDefaults = defaultTemplates.filter(template =>
+                !overriddenDefaultIds.has(template.id || template.day)
+            );
+
+            const allTemplates = [...visibleDefaults, ...customTemplates];
+
+            console.log(`✅ getUserWorkoutTemplates: ${visibleDefaults.length} defaults + ${customTemplates.length} customs (${overriddenDefaultIds.size} defaults overridden) = ${allTemplates.length} total`);
+
             return allTemplates;
-            
+
         } catch (error) {
             console.error('❌ Error loading user workout templates:', error);
             return [];
