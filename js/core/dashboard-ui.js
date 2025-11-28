@@ -69,7 +69,39 @@ async function checkForInProgressWorkout() {
         }
 
         if (workoutData && !workoutData.completedAt && !workoutData.cancelledAt) {
-            console.log('🏋️ Found in-progress workout:', workoutData.workoutType);
+            // Check if workout is too old (> 3 hours) - probably abandoned
+            const workoutStart = new Date(workoutData.startedAt);
+            const hoursSinceStart = (Date.now() - workoutStart.getTime()) / (1000 * 60 * 60);
+
+            if (hoursSinceStart > 3) {
+                console.log(`⏰ Workout too old (${hoursSinceStart.toFixed(1)}h), auto-completing if it has exercises`);
+
+                // Check if workout has any completed exercises
+                const hasCompletedExercises = workoutData.exercises &&
+                    Object.values(workoutData.exercises).some(ex => ex.completed || (ex.sets && ex.sets.length > 0));
+
+                const { setDoc, doc, db, deleteDoc } = await import('./firebase-config.js');
+                const workoutRef = doc(db, "users", AppState.currentUser.uid, "workouts", workoutData.date);
+
+                if (hasCompletedExercises) {
+                    // Auto-complete the workout with its original start date
+                    workoutData.completedAt = new Date().toISOString();
+                    workoutData.autoCompleted = true; // Flag for tracking
+                    await setDoc(workoutRef, workoutData, { merge: true });
+                    console.log('✅ Auto-completed abandoned workout:', workoutData.workoutType);
+                } else {
+                    // No exercises done - delete the empty workout
+                    await deleteDoc(workoutRef);
+                    console.log('🗑️ Deleted abandoned empty workout:', workoutData.workoutType);
+                }
+
+                const card = document.getElementById('resume-workout-banner');
+                if (card) card.classList.add('hidden');
+                window.inProgressWorkout = null;
+                return;
+            }
+
+            console.log('🏋️ Found in-progress workout:', workoutData.workoutType, `(${hoursSinceStart.toFixed(1)}h ago)`);
 
             // Find the workout plan
             const workoutPlan = AppState.workoutPlans.find(plan =>
