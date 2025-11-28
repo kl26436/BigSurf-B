@@ -61,24 +61,24 @@ Use this checklist to test Big Surf Workout Tracker on your mobile device before
 - [x] Cancelled workouts don't appear in history ✅ TESTED 2025-11-27 (v4.2+)
 
 ### In-Progress Workout Detection
-- [ ] Starting a workout then refreshing shows resume card
-- [ ] Resume card shows correct workout name and time
-- [ ] Can resume workout and continue where left off
-- [ ] Can discard in-progress workout
+- [x] Starting a workout then refreshing shows resume card ✅ TESTED 2025-11-28
+- [x] Resume card shows correct workout name and time ✅ TESTED 2025-11-28 (v4.23)
+- [x] Can resume workout and continue where left off ✅ TESTED 2025-11-28
+- [x] Can cancel in-progress workout ✅ TESTED 2025-11-28 (renamed from "discard")
 
 ### Workout History
-- [ ] Calendar loads with current month
-- [ ] Can navigate months (prev/next)
-- [ ] Past workouts display with correct dates
-- [ ] Workout cards show: name, date, duration, exercise count
-- [ ] Can view workout details (expandable)
-- [ ] Can **repeat** past workouts (starts new workout with same template)
-- [ ] Can **resume** incomplete workouts (continues in-progress workout)
-- [ ] Can **retry** cancelled workouts (starts new workout)
-- [ ] Can delete workouts (with confirmation)
-- [ ] Workout deletion shows confirmation notification
-- [ ] Search/filter works
-- [ ] Clear filters button works
+- [x] Calendar loads with current month ✅ TESTED 2025-11-28
+- [x] Can navigate months (prev/next) ✅ TESTED 2025-11-28
+- [x] Past workouts display with correct dates ✅ TESTED 2025-11-28
+- [x] Workout cards show: name, date, duration, exercise count ✅ TESTED 2025-11-28
+- [x] Can view workout details (expandable) ✅ TESTED 2025-11-28
+- [ ] Can **repeat** past workouts (starts new workout with same template) ❌ BUG: getWorkoutDetails error
+- [ ] Can **resume** incomplete workouts (continues in-progress workout) ❌ BUG: getWorkoutDetails error
+- [ ] Can **retry** cancelled workouts (starts new workout) - NOT TESTED
+- [x] Can delete workouts (with confirmation) ✅ TESTED 2025-11-28
+- [ ] Delete should navigate back to calendar view ❌ BUG: stays on modal
+- [ ] Search/filter works - NOT IMPLEMENTED (future enhancement)
+- [ ] Clear filters button works - NOT IMPLEMENTED (future enhancement)
 
 ### Manual Workout Entry
 - [ ] "Add Manual Workout" button opens modal
@@ -347,55 +347,49 @@ Before announcing to users:
 ### v4.15-v4.19: UX Improvements & Template Overrides (2025-11-28)
 
 **v4.15: In-Progress Workout Warning**
-- [ ] Starting new workout when one is in progress shows confirmation dialog
-- [ ] Dialog warns that current workout will be cancelled
-- [ ] Choosing "Cancel" keeps current workout, doesn't start new one
-- [ ] Choosing "OK" cancels old workout and starts new one
-- [ ] Cancelled workout is marked as cancelled in Firebase
+- [x] Starting new workout when one is in progress shows confirmation dialog ✅ TESTED 2025-11-28
+- [x] Dialog warns that current workout will be cancelled ✅ TESTED 2025-11-28
+- [x] Choosing "Cancel" keeps current workout, doesn't start new one ✅ TESTED 2025-11-28
+- [x] Choosing "OK" cancels old workout and starts new one ✅ TESTED 2025-11-28
+- [x] Cancelled workout is marked as cancelled in Firebase ✅ TESTED 2025-11-28
 
 **v4.15: Exercise Library Button Removal**
-- [ ] Exercise Library button removed from Workout Management modal
-- [ ] Exercise Library still accessible from hamburger menu
-- [ ] Exercise Library still accessible from template editor when adding exercises
+- [x] Exercise Library button removed from Workout Management modal ✅ TESTED 2025-11-28
+- [x] Exercise Library still accessible from hamburger menu ✅ TESTED 2025-11-28
+- [x] Exercise Library still accessible from template editor when adding exercises ✅ TESTED 2025-11-28
 
 **v4.15: Full Exercise Lists in Template Cards**
-- [ ] Template cards show ALL exercises (no "and X more...")
-- [ ] Exercise list is scrollable if > 5-6 exercises
-- [ ] Each exercise appears as a separate line item
-- [ ] Hover effect on exercise items
+- [x] Template cards show ALL exercises (no "and X more...") ✅ TESTED 2025-11-28
+- [x] Exercise list is scrollable if > 5-6 exercises ✅ TESTED 2025-11-28
+- [x] Each exercise appears as a separate line item ✅ TESTED 2025-11-28
+- [x] Hover effect on exercise items ✅ TESTED 2025-11-28
 
 **v4.16: Day Selector for Templates**
-- [ ] Template editor shows "Suggested Days" checkbox section
-- [ ] Can select multiple days (Mon, Tue, Wed, Thu, Fri, Sat, Sun)
-- [ ] Selected days highlighted with teal color
-- [ ] Days save with template to Firebase
-- [ ] Dashboard shows "Suggested for [Day]" section
-- [ ] Only templates assigned to current day appear in suggestions
-- [ ] Clicking suggested workout starts it immediately
-- [ ] If no templates for today, section doesn't appear
+- [x] Template editor shows "Assign Days" checkbox section ✅ TESTED 2025-11-28
+- [x] Can select multiple days (Mon, Tue, Wed, Thu, Fri, Sat, Sun) ✅ TESTED 2025-11-28
+- [x] Selected days highlighted with teal color ✅ TESTED 2025-11-28
+- [x] Days save with template to Firebase ✅ TESTED 2025-11-28
+- [x] Dashboard shows "Suggested for [Day]" section ✅ TESTED 2025-11-28
+- [x] Only templates assigned to current day appear in suggestions ✅ TESTED 2025-11-28
+- [x] Clicking suggested workout starts it immediately ✅ TESTED 2025-11-28
+- [x] If no templates for today, section doesn't appear ✅ TESTED 2025-11-28
 
 **v4.17: Multi-Day Selector**
-- [ ] Can select multiple days for same template (e.g., Tue + Fri)
-- [ ] Template appears in suggestions on ALL selected days
-- [ ] Example: "Legs" with Tue + Fri shows on both Tuesday and Friday
+- [x] Can select multiple days for same template (e.g., Tue + Fri) ✅ TESTED 2025-11-28
+- [x] Template appears in suggestions on ALL selected days ✅ TESTED 2025-11-28
+- [x] Example: "Legs" with Tue + Fri shows on both Tuesday and Friday ✅ TESTED 2025-11-28
 
 **v4.18: Suggested Title Alignment**
-- [ ] "Suggested for [Day]" title is left-aligned
-- [ ] Title matches alignment of other dashboard sections
+- [x] "Suggested for [Day]" title is left-aligned ✅ TESTED 2025-11-28
+- [x] Title matches alignment of other dashboard sections ✅ TESTED 2025-11-28
 
-**v4.19: Template Override System** (CRITICAL - NEW BEHAVIOR)
-- [ ] ALL templates show Edit button (including defaults)
-- [ ] Default templates show "Hide" button (eye-slash icon)
-- [ ] Custom templates show "Delete" button (trash icon)
-- [ ] Editing default template creates override
-- [ ] Edited default disappears from defaults, appears in custom
-- [ ] Original default is hidden from view
-- [ ] Overridden templates show "Reset" button
-- [ ] Clicking "Reset" restores original default template
-- [ ] Hiding default template removes it from view
-- [ ] Hidden templates can be restored with "Reset"
-- [ ] Deleting custom template removes it permanently
-- [ ] No more "Copy to Custom" button (replaced by Edit)
+**v4.19-v4.20: Template Override System** (Updated in v4.20)
+- [x] ALL templates show Edit button (including defaults) ✅ TESTED 2025-11-28
+- [x] ALL templates show Delete button (unified in v4.20) ✅ TESTED 2025-11-28
+- [x] Deleting default template hides it from view ✅ TESTED 2025-11-28
+- [x] Deleting custom template removes it permanently ✅ TESTED 2025-11-28
+- [x] Editing default template creates override ✅ TESTED 2025-11-28
+- [x] No more "Copy to Custom" button (replaced by Edit) ✅ TESTED 2025-11-28
 
 ## 🧪 How to Test Template Override System (v4.19)
 
