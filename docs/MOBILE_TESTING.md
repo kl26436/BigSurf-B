@@ -100,6 +100,8 @@ Use this checklist to test Big Surf Workout Tracker on your mobile device before
 ### Workout Management (Templates)
 - [ ] "Manage Workouts" button opens modal
 - [ ] Can switch between default/custom templates
+- [ ] Can **copy default template to custom** (makes editable copy)
+- [ ] Copied template appears in custom templates immediately
 - [ ] Can create new template
 - [ ] Can **edit template** (opens editor)
 - [ ] Can edit template name
