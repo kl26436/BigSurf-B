@@ -307,8 +307,12 @@ export async function saveCurrentTemplate() {
     }
     
     const success = await workoutManager.saveWorkoutTemplate(currentEditingTemplate);
-    
+
     if (success) {
+        // Reload AppState.workoutPlans so new template is available for startWorkout()
+        AppState.workoutPlans = await workoutManager.getUserWorkoutTemplates();
+        console.log('✅ Workout plans reloaded after template save:', AppState.workoutPlans.length);
+
         closeTemplateEditor();
         await loadWorkoutTemplates();
     }
