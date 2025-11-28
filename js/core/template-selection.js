@@ -221,11 +221,11 @@ export async function copyTemplateToCustom(templateId) {
             return;
         }
         
-        // Create custom version
+        // Create custom version with DEEP CLONE of exercises
         const customTemplate = {
             name: `${defaultTemplate.day || defaultTemplate.name} (Custom)`,
             category: getWorkoutCategory(defaultTemplate.day || defaultTemplate.name),
-            exercises: [...(defaultTemplate.exercises || [])],
+            exercises: JSON.parse(JSON.stringify(defaultTemplate.exercises || [])), // Deep clone to make exercises editable
             isCustom: true,
             isDefault: false,
             createdFrom: templateId
