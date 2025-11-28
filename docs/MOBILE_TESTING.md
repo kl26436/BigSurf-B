@@ -21,20 +21,20 @@ Use this checklist to test Big Surf Workout Tracker on your mobile device before
 - [x] Works in incognito mode ✅ TESTED 2025-11-27
 
 ### Starting a Workout from Template
-- [ ] Can view default workout templates
-- [ ] Can switch between default/custom template categories
-- [ ] Can select workout template
-- [ ] Workout starts without errors
-- [ ] All exercises load correctly
-- [ ] Can see exercise details (sets, reps, weights)
-- [ ] Form videos play (if using YouTube links)
-- [ ] No "Unsupported field value" errors for custom workouts
+- [x] Can view default workout templates ✅ TESTED 2025-11-28
+- [x] Can switch between default/custom template categories ✅ TESTED 2025-11-28
+- [x] Can select workout template ✅ TESTED 2025-11-28
+- [x] Workout starts without errors ✅ TESTED 2025-11-28
+- [x] All exercises load correctly ✅ TESTED 2025-11-28
+- [x] Can see exercise details (sets, reps, weights) ✅ TESTED 2025-11-28
+- [x] Form videos play (if using YouTube links) ✅ TESTED 2025-11-28
+- [x] No "Unsupported field value" errors for custom workouts ✅ TESTED 2025-11-28
 
 ### Starting a Custom Workout
-- [ ] Can create new custom workout from Workout Management
-- [ ] Custom workout starts successfully
-- [ ] Custom workout saves with correct name (not "undefined")
-- [ ] Custom workout appears in history with correct title
+- [x] Can create new custom workout from Workout Management ✅ TESTED 2025-11-28 (v4.11)
+- [x] Custom workout starts successfully ✅ TESTED 2025-11-28 (v4.9+)
+- [x] Custom workout saves with correct name (not "undefined") ✅ TESTED 2025-11-28 (v4.10+)
+- [x] Custom workout appears in history with correct title ✅ TESTED 2025-11-28
 
 ### During Workout Execution
 - [x] Can enter sets, reps, and weights ✅ TESTED 2025-11-27
@@ -328,6 +328,12 @@ Before announcing to users:
 ### v4.8: Sets Counter Accuracy
 - [x] Resume banner shows "X/Y" where Y is template total (not saved total) ✅ TESTED 2025-11-28
 - [x] Example: "8/24 sets" not "8/8 sets" ✅ TESTED 2025-11-28
+
+### v4.9-v4.11: Custom Template Fixes
+- [x] Custom templates load immediately after save (no refresh needed) ✅ TESTED 2025-11-28 (v4.9)
+- [x] Custom workout can be started immediately ✅ TESTED 2025-11-28 (v4.9)
+- [x] Exercise names display correctly (not "undefined") ✅ TESTED 2025-11-28 (v4.10)
+- [x] Template selector UI refreshes after creating template ✅ TESTED 2025-11-28 (v4.11)
 
 ## 🧪 How to Test Auto-Delete (Empty Workout > 3h)
 
