@@ -997,6 +997,41 @@ body {
     line-height: 1.4;
 }
 
+.template-preview {
+    margin: 1rem 0;
+}
+
+.template-preview .exercise-count {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.exercise-list-preview {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.exercise-list-preview li {
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s ease;
+}
+
+.exercise-list-preview li:last-child {
+    border-bottom: none;
+}
+
+.exercise-list-preview li:hover {
+    background: rgba(64, 224, 208, 0.05);
+}
+
 .template-actions {
     display: flex;
     gap: 0.5rem;

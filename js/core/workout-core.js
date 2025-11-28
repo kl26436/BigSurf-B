@@ -17,6 +17,33 @@ export async function startWorkout(workoutType) {
         return;
     }
 
+    // Check if there's already a workout in progress
+    const { loadTodaysWorkout } = await import('./data-manager.js');
+    const todaysWorkout = await loadTodaysWorkout(AppState);
+
+    if (todaysWorkout && !todaysWorkout.completedAt && !todaysWorkout.cancelledAt) {
+        // There's already a workout in progress - warn the user
+        const workoutName = todaysWorkout.workoutType || 'Unknown';
+        const confirmed = confirm(
+            `⚠️ You already have a workout in progress: "${workoutName}"\n\n` +
+            `Starting a new workout will cancel your current workout and you'll lose any unsaved progress.\n\n` +
+            `Do you want to continue?`
+        );
+
+        if (!confirmed) {
+            console.log('❌ User cancelled starting new workout');
+            return;
+        }
+
+        // User confirmed - cancel the current workout (mark it as cancelled in Firebase)
+        console.log('⚠️ Cancelling in-progress workout to start new one');
+        todaysWorkout.cancelledAt = new Date().toISOString();
+        await saveWorkoutData({ savedData: todaysWorkout, currentUser: AppState.currentUser });
+
+        // Clear in-progress workout reference
+        window.inProgressWorkout = null;
+    }
+
     // Check if location is set, if not, show location selector
     const { PRTracker } = await import('./pr-tracker.js');
     const currentLocation = PRTracker.getCurrentLocation();
@@ -130,12 +157,14 @@ export async function completeWorkout() {
     showDashboard();
 }
 
-export function cancelWorkout() {
+export function cancelWorkout(skipConfirmation = false) {
     if (!AppState.currentWorkout) return;
 
-    // Confirm cancellation
-    if (!confirm('Cancel this workout? All progress will be saved but marked as cancelled.')) {
-        return; // User chose not to cancel
+    // Confirm cancellation unless explicitly skipped
+    if (!skipConfirmation) {
+        if (!confirm('Cancel this workout? All progress will be saved but marked as cancelled.')) {
+            return; // User chose not to cancel
+        }
     }
 
     AppState.savedData.cancelledAt = new Date().toISOString();

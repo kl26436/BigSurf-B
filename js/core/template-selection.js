@@ -310,17 +310,18 @@ export function renderTemplateCards(templates, targetContainer = null) {
 export function createTemplateCard(template, isDefault = false) {
     const card = document.createElement('div');
     card.className = 'template-card';
-    
+
     const exerciseCount = template.exercises?.length || 0;
-    const exercisePreview = template.exercises?.slice(0, 3).map(ex => 
-        getExerciseName(ex)
-    ).join(', ') || 'No exercises';
-    const moreText = exerciseCount > 3 ? ` and ${exerciseCount - 3} more...` : '';
-    
+
+    // Build full exercise list as bullet points
+    const exerciseList = template.exercises?.map(ex =>
+        `<li>${getExerciseName(ex)}</li>`
+    ).join('') || '<li>No exercises</li>';
+
     // Use template.id for custom templates, template.day for default templates
     const templateId = template.id || template.day;
     const templateName = template.name || template.day;
-    
+
     card.innerHTML = `
         <div class="template-header">
             <h4>${templateName}</h4>
@@ -331,7 +332,9 @@ export function createTemplateCard(template, isDefault = false) {
         </div>
         <div class="template-preview">
             <div class="exercise-count">${exerciseCount} exercises</div>
-            <div class="exercise-preview">${exercisePreview}${moreText}</div>
+            <ul class="exercise-list-preview">
+                ${exerciseList}
+            </ul>
         </div>
         <div class="template-actions">
             <button class="btn btn-primary btn-small" onclick="useTemplateFromManagement('${templateId}', ${isDefault})">
@@ -351,7 +354,7 @@ export function createTemplateCard(template, isDefault = false) {
             `}
         </div>
     `;
-    
+
     return card;
 }
 
