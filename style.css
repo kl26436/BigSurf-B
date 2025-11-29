@@ -18,6 +18,22 @@
 
 
 /* ============================================================================
+   Z-INDEX SCALE (Standardized Stacking Context)
+   ============================================================================
+   Base:        0     - Default stacking
+   Dropdowns:   100   - Dropdown menus, tooltips
+   Sticky:      200   - Sticky elements, fixed headers
+   Sidebar:     300   - Navigation sidebar
+   Overlay:     400   - Backdrop overlays
+   Modal:       500   - Standard modals
+   Modal-High:  600   - Modals that appear over other modals
+   Toast:       700   - Notifications, toasts
+   Loading:     800   - Loading screens
+   Critical:    900   - Critical UI (errors, confirmations)
+   ============================================================================ */
+
+
+/* ============================================================================
    1. CSS VARIABLES & RESET
    ============================================================================ */
 
@@ -60,7 +76,7 @@ body {
     background: var(--bg-secondary);
     border-right: 1px solid var(--border);
     transition: left 0.3s ease;
-    z-index: 1000;
+    z-index: 300;
     overflow-y: auto;
 }
 
@@ -151,7 +167,7 @@ body {
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
-    z-index: 999;
+    z-index: 299;
 }
 
 .sidebar-overlay.active {
@@ -892,11 +908,6 @@ body {
    ============================================================================ */
 
 
-
-
-
-
-
 .app-container {
     max-width: 800px;
     margin: 0 auto;
@@ -1126,7 +1137,6 @@ body {
     gap: 1.5rem;
     margin-top: 1.5rem;
 }
-
 
 
 /* Exercise Cards */
@@ -2414,7 +2424,7 @@ body {
     max-height: 0;
 }
 
-/* Compact Exercise Cards - REMOVED: Conflicted with three-row layout */
+/* Compact Exercise Cards - Removed (was duplicate) */
 /* .exercise-card {
     display: flex;
     align-items: center;
@@ -2821,7 +2831,7 @@ body {
     border: 1px solid rgba(0, 0, 0, 0.2);
     border-radius: 6px;
     padding: 0.4rem 0.6rem;
-    z-index: 1000;
+    z-index: 200;
     box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     transform: translateX(100%);
     transition: transform 0.3s ease;
@@ -2886,7 +2896,7 @@ body {
     display: flex;
     align-items: stretch;
     justify-content: stretch;
-    z-index: 2000;
+    z-index: 550;
     padding: 0;
     opacity: 0;
     visibility: hidden;
@@ -3786,7 +3796,7 @@ body {
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 500;
     padding: 20px;
 }
 
@@ -4288,7 +4298,7 @@ body {
     display: flex;
     align-items: stretch;
     justify-content: stretch;
-    z-index: 1000;
+    z-index: 500;
     padding: 0;
 }
 
@@ -4374,7 +4384,7 @@ body {
         display: none;
         align-items: center;
         justify-content: center;
-        z-index: 1000;
+        z-index: 500;
         padding: 20px;
     }
 
@@ -4696,9 +4706,6 @@ body {
 }
 
 
-
-
-
 /* Animation */
 .detailed-workout-modal[style*="flex"] {
     animation: modalFadeIn 0.3s ease;
@@ -4801,7 +4808,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 800;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
@@ -4856,7 +4863,7 @@ img[loading="lazy"].loaded {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 800;
     animation: fadeIn 0.3s ease;
 }
 
@@ -4948,7 +4955,7 @@ img[loading="lazy"].loaded {
 
 /* Location selector modal - higher z-index to appear above other modals */
 #location-selector-modal {
-    z-index: 2000 !important;
+    z-index: 600;
 }
 
 /* Mobile Responsiveness */
@@ -4989,7 +4996,6 @@ img[loading="lazy"].loaded {
 }
 
 /* Mobile Responsive */
-
 
 
 /* ============================================================================
@@ -6628,17 +6634,20 @@ img[loading="lazy"].loaded {
 
 /* Exercise Library Modal - needs higher z-index to appear over other modals */
 #exercise-library-modal {
-    z-index: 1100 !important;
+    z-index: 550;
 }
 
-/* Add Exercise Modal - needs highest z-index to appear over exercise library */
+/* Add Exercise Modal - appears over exercise library modal */
+#add-exercise-modal {
+    z-index: 600;
+}
+
 #add-exercise-modal:not(.hidden) {
-    z-index: 1200 !important;
-    background: rgba(0, 0, 0, 0.8) !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 20px !important;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
 }
 
 #add-exercise-modal .modal-content {
@@ -6653,5 +6662,5 @@ img[loading="lazy"].loaded {
 
 /* Manual Workout Modal */
 #add-manual-workout-modal {
-    z-index: 1050;
+    z-index: 520;
 }
