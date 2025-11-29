@@ -117,30 +117,30 @@ Use this checklist to test Big Surf Workout Tracker on your mobile device before
 - [x] Templates sync across devices ✅ Firebase
 
 ### Exercise Library
-- [x] Library modal opens (integrated, not popup window) ✅ Built-in
-- [x] All 79+ exercises load ✅ Firebase
-- [x] Search works (name, body part, equipment) ✅ Built-in
-- [x] Body part filter works ✅ Built-in
-- [x] Equipment filter works ✅ Built-in
-- [x] Can select exercise in different contexts:
-  - [x] Add to manual workout ✅ Built-in
-  - [x] Add to template ✅ v4.20
-  - [x] Add to active workout ✅ v4.24
-- [x] Modal closes after selection ✅ Built-in
+- [ ] Library modal opens (integrated, not popup window) - BROKEN
+- [ ] All 79+ exercises load - NEEDS TESTING
+- [ ] Search works (name, body part, equipment) - NEEDS TESTING
+- [ ] Body part filter works - NEEDS TESTING
+- [ ] Equipment filter works - NEEDS TESTING
+- [ ] Can select exercise in different contexts:
+  - [ ] Add to manual workout - BROKEN
+  - [ ] Add to template - BROKEN
+  - [ ] Add to active workout - BROKEN
+- [ ] Modal closes after selection - NEEDS TESTING
 
 ### Exercise Manager
-- [x] "Manage Exercises" section loads ✅ Built-in
-- [x] All exercises display (default + custom) ✅ Firebase
-- [x] Search works ✅ Built-in
-- [x] Body part filter works ✅ Built-in
-- [x] Equipment filter works ✅ Built-in
-- [x] Can create custom exercise ✅ Built-in
-- [x] Custom exercise **saves to Firebase** successfully ✅ Firebase
-- [x] Can edit exercises ✅ Built-in
-- [x] Can **delete custom exercises** (removes from Firebase) ✅ Firebase
-- [x] Can **delete exercise overrides** (reverts to default) ✅ Firebase
-- [x] Can **hide default exercises** (hides from library) ✅ Firebase
-- [x] Changes reflect immediately in exercise library ✅ Built-in
+- [ ] "Manage Exercises" section loads - NEEDS TESTING
+- [ ] All exercises display (default + custom) - NEEDS TESTING
+- [ ] Search works - NEEDS TESTING
+- [ ] Body part filter works - NEEDS TESTING
+- [ ] Equipment filter works - NEEDS TESTING
+- [ ] Can create custom exercise - BROKEN
+- [ ] Custom exercise **saves to Firebase** successfully - BROKEN
+- [ ] Can edit exercises - BROKEN
+- [ ] Can **delete custom exercises** (removes from Firebase) - BROKEN
+- [ ] Can **delete exercise overrides** (reverts to default) - BROKEN
+- [ ] Can **hide default exercises** (hides from library) - BROKEN
+- [ ] Changes reflect immediately in exercise library - NEEDS TESTING
 
 ### Location Management
 - [ ] Location selector - DISABLED (modal visibility issues, will fix later) - v4.25

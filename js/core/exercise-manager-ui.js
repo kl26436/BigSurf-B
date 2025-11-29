@@ -241,8 +241,15 @@ export function clearExerciseFilters() {
 }
 
 // Refresh exercise library
-export function refreshExerciseLibrary() {
-    loadExercises();
+export async function refreshExerciseLibrary() {
+    // Initialize workout manager if needed
+    if (!workoutManager) {
+        workoutManager = new FirebaseWorkoutManager(AppState);
+    }
+
+    // Reload from Firebase
+    AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
+    await loadExercises();
 }
 
 // Show add exercise modal
@@ -333,10 +340,27 @@ export async function saveExercise(event) {
             workoutManager = new FirebaseWorkoutManager(AppState);
         }
 
-        await workoutManager.saveCustomExercise(formData, false);
+        const isEditing = !!currentEditingExercise;
 
+        if (isEditing) {
+            // Merge with existing exercise data
+            const exerciseToSave = {
+                ...currentEditingExercise,
+                ...formData,
+                id: currentEditingExercise.id
+            };
+            await workoutManager.saveUniversalExercise(exerciseToSave, true);
+        } else {
+            // New exercise
+            await workoutManager.saveCustomExercise(formData, false);
+        }
+
+        showNotification(isEditing ? 'Exercise updated!' : 'Exercise created!', 'success');
         closeAddExerciseModal();
-        await refreshExerciseLibrary();
+
+        // Refresh AppState exercise database
+        AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
+        await loadExercises();
 
     } catch (error) {
         console.error('❌ Error saving exercise:', error);
@@ -365,17 +389,19 @@ export async function deleteExercise(exerciseId) {
                 workoutManager = new FirebaseWorkoutManager(AppState);
             }
 
-            // Delete from Firebase
-            if (exercise.isCustom) {
-                await workoutManager.deleteCustomExercise(exerciseId);
-            } else if (exercise.isOverride) {
-                await workoutManager.deleteExerciseOverride(exerciseId);
-            } else {
-                await workoutManager.hideDefaultExercise(exerciseId);
-            }
+            // Delete from Firebase using universal delete method
+            await workoutManager.deleteUniversalExercise(exerciseId, exercise);
 
-            // Refresh the exercise library
-            await refreshExerciseLibrary();
+            showNotification(
+                exercise.isCustom ? 'Exercise deleted!' :
+                exercise.isOverride ? 'Reverted to default!' :
+                'Exercise hidden!',
+                'success'
+            );
+
+            // Refresh AppState exercise database
+            AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
+            await loadExercises();
 
         } catch (error) {
             console.error('❌ Error deleting exercise:', error);
