@@ -910,16 +910,23 @@ export function addExerciseToActiveWorkout() {
     if (!AppState.currentWorkout) {
         return;
     }
-    
+
     if (!AppState.currentUser) {
         alert('Please sign in to add exercises');
         return;
     }
-    
-    // Open exercise library for workout addition
-    if (window.exerciseLibrary && window.exerciseLibrary.openForWorkoutAdd) {
-        window.exerciseLibrary.openForWorkoutAdd();
-    } else {
+
+    // Open the exercise library modal for adding to active workout
+    const modal = document.getElementById('exercise-library-modal');
+    if (modal) {
+        // Set flag so we know exercises should be added to active workout
+        window.addingToActiveWorkout = true;
+        modal.classList.remove('hidden');
+
+        // Load exercises into the modal
+        if (window.openExerciseLibrary) {
+            window.openExerciseLibrary('activeWorkout');
+        }
     }
 }
 

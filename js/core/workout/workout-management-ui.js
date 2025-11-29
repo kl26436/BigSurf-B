@@ -631,6 +631,9 @@ export function closeExerciseLibrary() {
         modal.style.zIndex = '';
     }
 
+    // Clear the active workout flag
+    window.addingToActiveWorkout = false;
+
     // Clear search
     const searchInput = document.getElementById('exercise-library-search');
     const bodyPartFilter = document.getElementById('body-part-filter');
@@ -701,10 +704,19 @@ function createLibraryExerciseCard(exercise) {
 }
 
 function selectExerciseFromLibrary(exercise) {
-    // Add to current template
-    if (currentEditingTemplate) {
-        const exerciseName = exercise.name || exercise.machine;
+    const exerciseName = exercise.name || exercise.machine;
 
+    // Check if we're adding to active workout
+    if (window.addingToActiveWorkout && window.confirmExerciseAddToWorkout) {
+        window.confirmExerciseAddToWorkout(exercise);
+        closeExerciseLibrary();
+        window.addingToActiveWorkout = false;
+        showNotification(`Added "${exerciseName}" to workout`, 'success');
+        return;
+    }
+
+    // Add to current template (editing mode)
+    if (currentEditingTemplate) {
         // Check for duplicate exercise names
         const isDuplicate = currentEditingTemplate.exercises.some(ex =>
             (ex.name === exerciseName || ex.machine === exerciseName)
