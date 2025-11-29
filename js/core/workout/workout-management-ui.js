@@ -10,6 +10,16 @@ let filteredExercises = [];
 
 export function initializeWorkoutManagement(appState) {
     workoutManager = new FirebaseWorkoutManager(appState);
+
+    // Listen for exercise library updates from exercise-manager-ui
+    window.addEventListener('exerciseLibraryUpdated', async () => {
+        const libraryModal = document.getElementById('exercise-library-modal');
+        if (libraryModal && !libraryModal.classList.contains('hidden')) {
+            exerciseLibrary = await workoutManager.getExerciseLibrary();
+            filteredExercises = [...exerciseLibrary];
+            renderExerciseLibrary();
+        }
+    });
 }
 
 // Main navigation functions
@@ -723,25 +733,45 @@ function selectExerciseFromLibrary(exercise) {
     }
 }
 
-// Create Exercise functions
+// Create Exercise functions - uses the add-exercise-modal
+let creatingFromLibraryModal = false;
+
 export function showCreateExerciseForm() {
-    const modal = document.getElementById('create-exercise-modal');
+    // Set flag so we know to refresh library modal after save
+    creatingFromLibraryModal = true;
+
+    // Use the existing add-exercise-modal
+    const modal = document.getElementById('add-exercise-modal');
+    const title = document.getElementById('add-exercise-modal-title');
+    const form = document.getElementById('add-exercise-form');
+
+    if (title) title.textContent = 'Create New Exercise';
+    if (form) form.reset();
+
     if (modal) {
+        // Increase z-index to appear above exercise library modal
+        modal.style.zIndex = '1200';
         modal.classList.remove('hidden');
     }
+
+    document.getElementById('new-exercise-name')?.focus();
 }
 
 export function closeCreateExerciseModal() {
-    const modal = document.getElementById('create-exercise-modal');
-    const form = document.getElementById('create-exercise-form');
-    
-    if (modal) modal.classList.add('hidden');
+    const modal = document.getElementById('add-exercise-modal');
+    const form = document.getElementById('add-exercise-form');
+
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.zIndex = ''; // Reset z-index
+    }
     if (form) form.reset();
+    creatingFromLibraryModal = false;
 }
 
 export async function createNewExercise(event) {
     event.preventDefault();
-    
+
     const name = document.getElementById('new-exercise-name')?.value.trim();
     const bodyPart = document.getElementById('new-exercise-body-part')?.value;
     const equipment = document.getElementById('new-exercise-equipment')?.value;
@@ -749,12 +779,12 @@ export async function createNewExercise(event) {
     const reps = parseInt(document.getElementById('new-exercise-reps')?.value) || 10;
     const weight = parseInt(document.getElementById('new-exercise-weight')?.value) || 50;
     const video = document.getElementById('new-exercise-video')?.value.trim();
-    
+
     if (!name) {
         showNotification('Please enter an exercise name', 'warning');
         return;
     }
-    
+
     const exerciseData = {
         name,
         machine: name,
@@ -766,19 +796,29 @@ export async function createNewExercise(event) {
         weight,
         video
     };
-    
+
     const success = await workoutManager.createExercise(exerciseData);
-    
+
     if (success) {
-        closeCreateExerciseModal();
-        
-        // Refresh exercise library if it's open
-        const libraryModal = document.getElementById('exercise-library-modal');
-        if (libraryModal && !libraryModal.classList.contains('hidden')) {
-            exerciseLibrary = await workoutManager.getExerciseLibrary();
-            filteredExercises = [...exerciseLibrary];
-            renderExerciseLibrary();
+        // Close the add-exercise-modal
+        const modal = document.getElementById('add-exercise-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.style.zIndex = '';
         }
+
+        // Refresh exercise library if it's open
+        if (creatingFromLibraryModal) {
+            const libraryModal = document.getElementById('exercise-library-modal');
+            if (libraryModal && !libraryModal.classList.contains('hidden')) {
+                exerciseLibrary = await workoutManager.getExerciseLibrary();
+                filteredExercises = [...exerciseLibrary];
+                renderExerciseLibrary();
+            }
+        }
+
+        creatingFromLibraryModal = false;
+        showNotification(`Created "${name}"`, 'success');
     }
 }
 

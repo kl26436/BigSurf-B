@@ -360,7 +360,19 @@ export async function saveExercise(event) {
 
         // Refresh AppState exercise database
         AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
-        await loadExercises();
+
+        // Refresh exercise manager section if visible
+        const managerSection = document.getElementById('exercise-manager-section');
+        if (managerSection && !managerSection.classList.contains('hidden')) {
+            await loadExercises();
+        }
+
+        // Also refresh the exercise-library-modal if it's open (used in workout management)
+        const libraryModal = document.getElementById('exercise-library-modal');
+        if (libraryModal && !libraryModal.classList.contains('hidden')) {
+            // Dispatch custom event to trigger refresh in workout-management-ui
+            window.dispatchEvent(new CustomEvent('exerciseLibraryUpdated'));
+        }
 
     } catch (error) {
         console.error('❌ Error saving exercise:', error);
