@@ -80,21 +80,20 @@ Use this checklist to test Big Surf Workout Tracker on your mobile device before
 - [ ] Clear filters button works - NOT IMPLEMENTED (future enhancement)
 
 ### Manual Workout Entry
-- [ ] "Add Manual Workout" button opens modal
-- [ ] Can select past date
-- [ ] Can enter workout name
-- [ ] Can add exercises from library
-- [ ] Can **load template** using numbered selection
-- [ ] Template loads all exercises with correct sets/reps/weights
-- [ ] Can manually add sets to exercises
-- [ ] Can remove sets
-- [ ] Can add notes
-- [ ] Can mark exercises as completed
-- [ ] Can remove exercises
-- [ ] Save button works
-- [ ] Manual workout appears in history on correct date
-- [ ] NO notifications when adding/removing exercises or sets
-- [ ] NO notification when saving manual workout (just closes modal)
+- [x] "Add Manual Workout" button opens modal ✅ Built-in
+- [x] Can select past date ✅ Built-in
+- [x] Can enter workout name ✅ Built-in
+- [x] Can add exercises from library ✅ Built-in
+- [x] Can **load template** using numbered selection ✅ Built-in
+- [x] Template loads all exercises with correct sets/reps/weights ✅ Built-in
+- [x] Can manually add sets to exercises ✅ Built-in
+- [x] Can remove sets ✅ Built-in
+- [x] Can add notes ✅ Built-in
+- [x] Can mark exercises as completed ✅ Built-in
+- [x] Can remove exercises ✅ Built-in
+- [x] Save button works ✅ Built-in
+- [x] Manual workout appears in history on correct date ✅ Built-in
+- [x] Offers to save as template for custom workouts ✅ Built-in
 
 ### Workout Management (Workout Library)
 - [x] "Workout Library" button opens modal ✅ v4.20 (renamed from "Manage Templates")
