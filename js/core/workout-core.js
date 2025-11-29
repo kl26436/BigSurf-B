@@ -1308,16 +1308,22 @@ function stopModalRestTimer(exerciseIndex) {
 export function startWorkoutTimer() {
     const durationDisplay = document.getElementById('workout-duration');
     if (!durationDisplay) return;
-    
+
+    // Clear any existing timer first to prevent duplicates
+    if (AppState.workoutDurationTimer) {
+        clearInterval(AppState.workoutDurationTimer);
+        AppState.workoutDurationTimer = null;
+    }
+
     const startTime = AppState.workoutStartTime || new Date();
-    
+
     const updateDuration = () => {
         const elapsed = Math.floor((new Date() - startTime) / 1000);
         const minutes = Math.floor(elapsed / 60);
         const seconds = elapsed % 60;
         durationDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
-    
+
     updateDuration();
     AppState.workoutDurationTimer = setInterval(updateDuration, 1000);
 }
