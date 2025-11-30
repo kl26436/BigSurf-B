@@ -346,6 +346,26 @@ localStorage.setItem('debug', 'firebase:*');
   - [js/core/error-handler.js](js/core/error-handler.js) - Suppresses non-critical push errors
 - **For true background notifications**: Would require native iOS app (Swift/React Native/Capacitor)
 
+### v4.40: Phase 1 Equipment Tracking (2025-11-30)
+- **New Feature**: Equipment/machine tracking per exercise for accurate progress comparisons
+- **Firebase Schema**: New `users/{userId}/equipment` collection for saved equipment
+- **Exercise Fields**: Added `equipment` and `equipmentLocation` fields to exercises
+- **Equipment Picker Modal**: When adding exercises to workouts, prompts for equipment selection
+- **Equipment Display**: Shows equipment tags on exercise cards and template listings
+- **Change Equipment During Workout**: Tap exercise title to change equipment mid-workout
+- **Template Exercise Editing**: Edit button in workout editor opens full Exercise Manager edit section
+  - Uses callback pattern (`window.templateExerciseEditCallback`) for cross-module communication
+  - Returns to template editor after save instead of exercise manager
+- **Duplicate Prevention**: Adding same exercise twice to active workout shows warning
+- **Form Button Fix**: Template editor buttons use `type="button"` to prevent form submission
+- **Files**:
+  - [firebase-workout-manager.js](js/core/firebase-workout-manager.js) - Equipment CRUD functions
+  - [workout-management-ui.js](js/core/workout/workout-management-ui.js) - Equipment picker, template exercise editing
+  - [exercise-manager-ui.js](js/core/exercise-manager-ui.js) - Template exercise edit callback handling
+  - [workout-core.js](js/core/workout-core.js) - Equipment display, change equipment during workout
+  - [index.html](index.html) - Equipment picker modal
+- **Test Plan**: See [PLAN-equipment-tracking.md](PLAN-equipment-tracking.md)
+
 ### Key Technical Learnings
 
 1. **Deep vs Shallow Copy**: Always use deep clone for nested objects when modifications should not affect source
@@ -353,3 +373,4 @@ localStorage.setItem('debug', 'firebase:*');
 3. **Workout Status States**: `completed`, `incomplete`, `cancelled`, `partial` - must check `completedAt` and `cancelledAt` fields
 4. **Calendar Rendering**: Status-based CSS classes enable color coding without text labels
 5. **iOS PWA Notifications**: Neither client-side setTimeout nor server-side push works reliably - iOS platform limitation
+6. **Cross-Module Callbacks**: Use `window` flags and callbacks for communication between modal systems (e.g., `editingFromTemplateEditor`)

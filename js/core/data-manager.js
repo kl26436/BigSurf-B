@@ -42,7 +42,9 @@ export async function saveWorkoutData(state) {
                 sets: ex.sets,
                 reps: ex.reps,
                 weight: ex.weight,
-                video: ex.video || ''
+                video: ex.video || '',
+                equipment: ex.equipment || null,
+                equipmentLocation: ex.equipmentLocation || null
             }))
         };
         
@@ -71,12 +73,22 @@ export async function saveWorkoutData(state) {
     
     try {
         const docRef = doc(db, "users", state.currentUser.uid, "workouts", saveDate);
-        await setDoc(docRef, {
+        const savedDoc = {
             ...normalizedData,
             lastUpdated: new Date().toISOString(),
             version: '2.0'
-        });
-        
+        };
+        await setDoc(docRef, savedDoc);
+
+        // CRITICAL: Update window.inProgressWorkout so exercise changes persist on resume
+        // This ensures added/deleted exercises are retained when closing and reopening workout
+        if (window.inProgressWorkout && !state.savedData.completedAt && !state.savedData.cancelledAt) {
+            window.inProgressWorkout = {
+                ...savedDoc,
+                originalWorkout: state.savedData.originalWorkout
+            };
+        }
+
         return true;
     } catch (error) {
         console.error('Error saving workout data:', error);

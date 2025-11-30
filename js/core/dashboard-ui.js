@@ -110,9 +110,11 @@ async function checkForInProgressWorkout() {
             }
 
             // Store in-progress workout globally so it can be resumed
+            // Use workoutData.originalWorkout if it exists (contains modified exercise list)
+            // Only fall back to workoutPlan template if originalWorkout wasn't saved
             window.inProgressWorkout = {
                 ...workoutData,
-                originalWorkout: workoutPlan
+                originalWorkout: workoutData.originalWorkout || workoutPlan
             };
 
             // Show resume banner
@@ -128,9 +130,10 @@ async function checkForInProgressWorkout() {
                 let completedSets = 0;
                 let totalSets = 0;
 
-                // Get total sets from original workout template
-                if (workoutPlan && workoutPlan.exercises) {
-                    workoutPlan.exercises.forEach(exercise => {
+                // Get total sets from saved originalWorkout (if exercises were added/deleted) or template
+                const exerciseSource = workoutData.originalWorkout?.exercises || (workoutPlan && workoutPlan.exercises);
+                if (exerciseSource) {
+                    exerciseSource.forEach(exercise => {
                         totalSets += exercise.sets || 3; // Default to 3 if not specified
                     });
                 }

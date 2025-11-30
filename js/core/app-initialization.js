@@ -432,9 +432,10 @@ async function checkForInProgressWorkoutEnhanced() {
             }
             
             // Store in-progress workout globally
+            // Use todaysData.originalWorkout if it exists (contains modified exercise list)
             window.inProgressWorkout = {
                 ...todaysData,
-                originalWorkout: workoutPlan
+                originalWorkout: todaysData.originalWorkout || workoutPlan
             };
             
             // Show in-progress workout prompt

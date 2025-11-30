@@ -27,7 +27,8 @@ import {
     updateWorkoutDuration, startWorkoutTimer,
     showExerciseVideo, hideExerciseVideo, showExerciseVideoAndToggleButton, hideExerciseVideoAndToggleButton, convertYouTubeUrl,
     setGlobalUnit, setExerciseUnit, editExerciseDefaults,
-    closeExerciseModal, loadExerciseHistory, loadLastWorkoutHint, autoStartRestTimer
+    closeExerciseModal, loadExerciseHistory, loadLastWorkoutHint, autoStartRestTimer,
+    changeExerciseEquipment, applyEquipmentChange
 } from './core/workout-core.js';
 
 // Template selection functionality
@@ -52,7 +53,9 @@ import {
     addExerciseToTemplate, editTemplateExercise, removeTemplateExercise,
     openExerciseLibrary, closeExerciseLibrary,
     showCreateExerciseForm, closeCreateExerciseModal, createNewExercise,
-    returnToWorkoutsFromManagement, editTemplate, deleteTemplate, resetToDefault
+    returnToWorkoutsFromManagement, editTemplate, deleteTemplate, resetToDefault,
+    closeEquipmentPicker, skipEquipmentSelection, confirmEquipmentSelection, addEquipmentFromPicker,
+    closeTemplateExerciseEdit, saveTemplateExerciseEdit
 } from './core/workout/workout-management-ui.js';
 
 // Manual workout functionality
@@ -72,7 +75,10 @@ import {
     openExerciseManager, closeExerciseManager,
     filterExerciseLibrary, clearExerciseFilters, refreshExerciseLibrary,
     showAddExerciseModal, closeAddExerciseModal,
-    editExercise, saveExercise, deleteExercise, toggleExerciseGroup
+    editExercise, saveExercise, deleteExercise, toggleExerciseGroup,
+    clearSelectedEquipment, addEquipmentToList,
+    openEditExerciseSection, closeEditExerciseSection, saveExerciseFromSection,
+    deleteExerciseFromSection
 } from './core/exercise-manager-ui.js';
 
 // Location selector functionality
@@ -199,6 +205,10 @@ window.loadExerciseHistory = function(exerciseName, exerciseIndex) {
     loadExerciseHistory(exerciseName, exerciseIndex, AppState);
 };
 
+// Equipment change during workout
+window.changeExerciseEquipment = changeExerciseEquipment;
+window.applyEquipmentChange = applyEquipmentChange;
+
 // Timer Functions
 window.toggleModalRestTimer = toggleModalRestTimer;
 window.skipModalRestTimer = skipModalRestTimer;
@@ -249,6 +259,12 @@ window.editExercise = editExercise;
 window.saveExercise = saveExercise;
 window.deleteExercise = deleteExercise;
 window.toggleExerciseGroup = toggleExerciseGroup;
+window.clearSelectedEquipment = clearSelectedEquipment;
+window.addEquipmentToList = addEquipmentToList;
+window.openEditExerciseSection = openEditExerciseSection;
+window.closeEditExerciseSection = closeEditExerciseSection;
+window.saveExerciseFromSection = saveExerciseFromSection;
+window.deleteExerciseFromSection = deleteExerciseFromSection;
 
 // Location Selector Functions
 window.showLocationSelector = showLocationSelector;
@@ -417,6 +433,12 @@ window.returnToWorkoutsFromManagement = returnToWorkoutsFromManagement;
 window.editTemplate = editTemplate;
 window.deleteTemplate = deleteTemplate;
 window.resetToDefault = resetToDefault;
+window.closeEquipmentPicker = closeEquipmentPicker;
+window.skipEquipmentSelection = skipEquipmentSelection;
+window.confirmEquipmentSelection = confirmEquipmentSelection;
+window.addEquipmentFromPicker = addEquipmentFromPicker;
+window.closeTemplateExerciseEdit = closeTemplateExerciseEdit;
+window.saveTemplateExerciseEdit = saveTemplateExerciseEdit;
 
 // Authentication Functions
 window.signIn = signIn;

@@ -111,14 +111,16 @@ export class FirebaseWorkoutManager {
                 name: exerciseData.name,
                 bodyPart: exerciseData.bodyPart,
                 equipmentType: exerciseData.equipmentType,
+                equipment: exerciseData.equipment || null,
+                equipmentLocation: exerciseData.equipmentLocation || null,
                 sets: exerciseData.sets,
                 reps: exerciseData.reps,
                 weight: exerciseData.weight,
                 video: exerciseData.video,
                 tags: exerciseData.tags || [],
-                isDefault: false,        
-                isCustom: false,         
-                isOverride: true,        
+                isDefault: false,
+                isCustom: false,
+                isOverride: true,
                 overrideCreated: new Date().toISOString(),
                 lastUpdated: new Date().toISOString(),
                 createdBy: this.appState.currentUser.uid
@@ -401,6 +403,8 @@ export class FirebaseWorkoutManager {
                 machine: exerciseData.machine || exerciseData.name,
                 bodyPart: exerciseData.bodyPart,
                 equipmentType: exerciseData.equipmentType,
+                equipment: exerciseData.equipment || null,
+                equipmentLocation: exerciseData.equipmentLocation || null,
                 sets: exerciseData.sets,
                 reps: exerciseData.reps,
                 weight: exerciseData.weight,
@@ -806,6 +810,184 @@ async getGlobalDefaultTemplates() {
     }
 
     // REMOVED: swapExercise() method - Replaced by delete + add workflow
+
+    // ===== EQUIPMENT MANAGEMENT =====
+
+    /**
+     * Save equipment to user's equipment collection
+     * Used for tracking specific machines/equipment at gyms
+     */
+    async saveEquipment(equipmentData) {
+        if (!this.appState.currentUser) {
+            throw new Error('Must be signed in to save equipment');
+        }
+
+        try {
+            const equipmentId = equipmentData.id ||
+                `equipment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            const docRef = doc(this.db, "users", this.appState.currentUser.uid, "equipment", equipmentId);
+
+            const equipmentToSave = {
+                id: equipmentId,
+                name: equipmentData.name,
+                location: equipmentData.location || null,
+                exerciseTypes: equipmentData.exerciseTypes || [],
+                createdAt: equipmentData.createdAt || new Date().toISOString(),
+                lastUsed: new Date().toISOString()
+            };
+
+            await setDoc(docRef, equipmentToSave);
+            return equipmentId;
+
+        } catch (error) {
+            console.error('❌ Error saving equipment:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get all user's saved equipment
+     */
+    async getUserEquipment() {
+        if (!this.appState.currentUser) {
+            return [];
+        }
+
+        try {
+            const equipmentRef = collection(this.db, "users", this.appState.currentUser.uid, "equipment");
+            const q = query(equipmentRef, orderBy("lastUsed", "desc"));
+            const querySnapshot = await getDocs(q);
+
+            const equipment = [];
+            querySnapshot.forEach((doc) => {
+                equipment.push({ id: doc.id, ...doc.data() });
+            });
+
+            return equipment;
+
+        } catch (error) {
+            console.error('❌ Error loading user equipment:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get equipment used for a specific exercise type
+     */
+    async getEquipmentForExercise(exerciseName) {
+        if (!this.appState.currentUser) {
+            return [];
+        }
+
+        try {
+            const allEquipment = await this.getUserEquipment();
+
+            // Filter equipment that has been used with this exercise
+            return allEquipment.filter(eq =>
+                eq.exerciseTypes && eq.exerciseTypes.includes(exerciseName)
+            );
+
+        } catch (error) {
+            console.error('❌ Error loading equipment for exercise:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Update equipment's last used timestamp and add exercise type if new
+     */
+    async updateEquipmentUsage(equipmentId, exerciseName) {
+        if (!this.appState.currentUser || !equipmentId) {
+            return;
+        }
+
+        try {
+            const docRef = doc(this.db, "users", this.appState.currentUser.uid, "equipment", equipmentId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const exerciseTypes = data.exerciseTypes || [];
+
+                // Add exercise type if not already in list
+                if (!exerciseTypes.includes(exerciseName)) {
+                    exerciseTypes.push(exerciseName);
+                }
+
+                await setDoc(docRef, {
+                    ...data,
+                    exerciseTypes: exerciseTypes,
+                    lastUsed: new Date().toISOString()
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Error updating equipment usage:', error);
+        }
+    }
+
+    /**
+     * Delete equipment from user's collection
+     */
+    async deleteEquipment(equipmentId) {
+        if (!this.appState.currentUser) {
+            throw new Error('Must be signed in to delete equipment');
+        }
+
+        try {
+            const docRef = doc(this.db, "users", this.appState.currentUser.uid, "equipment", equipmentId);
+            await deleteDoc(docRef);
+            return true;
+
+        } catch (error) {
+            console.error('❌ Error deleting equipment:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get or create equipment by name and optional location
+     * Returns existing equipment if found, creates new if not
+     */
+    async getOrCreateEquipment(equipmentName, location = null, exerciseName = null, videoUrl = null) {
+        if (!this.appState.currentUser || !equipmentName) {
+            return null;
+        }
+
+        try {
+            const allEquipment = await this.getUserEquipment();
+
+            // Look for existing equipment with same name and location
+            const existing = allEquipment.find(eq =>
+                eq.name === equipmentName &&
+                (eq.location === location || (!eq.location && !location))
+            );
+
+            if (existing) {
+                // Update usage if exercise name provided
+                if (exerciseName) {
+                    await this.updateEquipmentUsage(existing.id, exerciseName);
+                }
+                return existing;
+            }
+
+            // Create new equipment
+            const newEquipment = {
+                name: equipmentName,
+                location: location,
+                exerciseTypes: exerciseName ? [exerciseName] : [],
+                video: videoUrl || null
+            };
+
+            const equipmentId = await this.saveEquipment(newEquipment);
+            return { id: equipmentId, ...newEquipment };
+
+        } catch (error) {
+            console.error('❌ Error getting or creating equipment:', error);
+            return null;
+        }
+    }
 }
 
 // For backward compatibility

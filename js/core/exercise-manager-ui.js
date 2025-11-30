@@ -9,6 +9,8 @@ let allExercises = [];
 let filteredExercises = [];
 let currentEditingExercise = null;
 let workoutManager = null;
+let selectedEquipmentId = null;
+let selectedEquipmentData = null;
 
 // Open exercise manager section
 export function openExerciseManager() {
@@ -83,6 +85,8 @@ async function loadExercises() {
         reps: exercise.reps || 10,
         weight: exercise.weight || 50,
         video: exercise.video || '',
+        equipment: exercise.equipment || null,
+        equipmentLocation: exercise.equipmentLocation || null,
         isCustom: exercise.isCustom || false,
         isDefault: exercise.isDefault || false,
         isOverride: exercise.isOverride || false
@@ -123,54 +127,34 @@ function renderExercises() {
     // Sort body parts alphabetically
     const sortedBodyParts = Object.keys(groupedExercises).sort();
 
-    // Render grouped exercises with collapsible sections
+    // Render grouped exercises (expanded by default)
     grid.innerHTML = sortedBodyParts.map(bodyPart => {
         const exercises = groupedExercises[bodyPart];
-        const groupId = `group-${bodyPart.toLowerCase().replace(/\s+/g, '-')}`;
 
-        const exerciseCards = exercises.map(exercise => {
-            const exerciseTypeClass = exercise.isOverride ? 'override' : exercise.isCustom ? 'custom' : '';
+        const exerciseRows = exercises.map(exercise => {
             const badge = exercise.isOverride ?
                 '<span class="exercise-type-badge badge-override">YOUR</span>' :
                 exercise.isCustom ?
                 '<span class="exercise-type-badge badge-custom">CUSTOM</span>' :
                 '';
 
-            const deleteButton = getDeleteButton(exercise);
-
             return `
-                <div class="exercise-card ${exerciseTypeClass}">
-                    <div class="exercise-card-header">
-                        <h5>${exercise.name}</h5>
-                        ${badge}
-                    </div>
-                    <div class="exercise-card-stats">
-                        <span>${exercise.sets}×${exercise.reps}</span>
-                        <span>${exercise.weight} lbs</span>
-                        <span class="equipment-tag">${exercise.equipmentType}</span>
-                    </div>
-                    <div class="exercise-card-actions">
+                <div class="exercise-manager-row" data-exercise-id="${exercise.id}">
+                    <span class="exercise-manager-name">${exercise.name}</span>
+                    ${badge}
+                    <div class="exercise-manager-actions">
                         <button class="btn-icon" onclick="editExercise('${exercise.id}')" title="Edit">
                             <i class="fas fa-edit"></i>
                         </button>
-                        ${deleteButton}
                     </div>
                 </div>
             `;
         }).join('');
 
         return `
-            <div class="exercise-group">
-                <button class="exercise-group-header" onclick="toggleExerciseGroup('${groupId}')">
-                    <div class="group-header-content">
-                        <h3>${bodyPart}</h3>
-                        <span class="exercise-count">${exercises.length}</span>
-                    </div>
-                    <i class="fas fa-chevron-down group-toggle-icon"></i>
-                </button>
-                <div class="exercise-group-grid collapsed" id="${groupId}">
-                    ${exerciseCards}
-                </div>
+            <div class="exercise-manager-group">
+                <div class="exercise-manager-group-header">${bodyPart} <span class="exercise-count">${exercises.length}</span></div>
+                <div class="exercise-manager-group-items">${exerciseRows}</div>
             </div>
         `;
     }).join('');
@@ -252,18 +236,338 @@ export async function refreshExerciseLibrary() {
     await loadExercises();
 }
 
-// Show add exercise modal
+// Show add exercise section (full screen)
 export function showAddExerciseModal() {
     currentEditingExercise = null;
-    const modal = document.getElementById('add-exercise-modal');
-    const title = document.getElementById('add-exercise-modal-title');
-    const form = document.getElementById('add-exercise-form');
+    openEditExerciseSection(null);
+}
 
-    if (title) title.textContent = 'Add New Exercise';
-    if (form) form.reset();
-    if (modal) modal.classList.remove('hidden');
+// Open the edit exercise section (full screen)
+export function openEditExerciseSection(exercise) {
+    const section = document.getElementById('edit-exercise-section');
+    const title = document.getElementById('edit-exercise-title');
 
-    document.getElementById('new-exercise-name')?.focus();
+    // Clear any previous selection state first
+    selectedEquipmentId = null;
+    selectedEquipmentData = null;
+
+    // Hide all other sections
+    const sections = ['dashboard', 'workout-selector', 'active-workout', 'workout-history-section',
+                      'stats-section', 'workout-management-section', 'exercise-manager-section'];
+    sections.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    // Also hide template editor modal if open (we'll show it again when returning)
+    const templateModal = document.getElementById('template-editor-modal');
+    if (templateModal) templateModal.classList.add('hidden');
+
+    // Show/hide delete button container based on add vs edit
+    const deleteContainer = document.getElementById('delete-exercise-container');
+
+    // Set title based on add vs edit
+    if (exercise) {
+        currentEditingExercise = exercise;
+        if (title) {
+            // Special title for template exercise editing
+            if (exercise.isTemplateExercise) {
+                title.textContent = 'Edit Workout Exercise';
+            } else {
+                title.textContent = exercise.isOverride ? 'Edit Your Version' :
+                                   exercise.isDefault ? 'Customize Exercise' :
+                                   'Edit Exercise';
+            }
+        }
+        populateEditForm(exercise);
+        // Show delete button when editing (but not for template exercises)
+        if (deleteContainer) {
+            if (exercise.isTemplateExercise) {
+                deleteContainer.classList.add('hidden');
+            } else {
+                deleteContainer.classList.remove('hidden');
+            }
+        }
+    } else {
+        currentEditingExercise = null;
+        if (title) title.textContent = 'Add New Exercise';
+        clearEditForm();
+        // Hide delete button when adding new
+        if (deleteContainer) deleteContainer.classList.add('hidden');
+    }
+
+    // Show the edit section
+    if (section) section.classList.remove('hidden');
+
+    // Populate equipment list for THIS exercise (will pre-select if exercise has equipment)
+    const exerciseName = exercise?.name || exercise?.machine || null;
+    populateEquipmentListForSection(exerciseName, exercise?.equipment, exercise?.equipmentLocation);
+
+    // Focus on name field
+    document.getElementById('edit-exercise-name')?.focus();
+}
+
+// Close the edit exercise section
+export function closeEditExerciseSection() {
+    const section = document.getElementById('edit-exercise-section');
+    if (section) section.classList.add('hidden');
+
+    // Check if we were editing from template editor
+    if (window.editingFromTemplateEditor) {
+        // Return to template editor modal (workout-management-section)
+        const workoutManagement = document.getElementById('workout-management-section');
+        if (workoutManagement) workoutManagement.classList.remove('hidden');
+
+        // Show the template editor modal
+        const templateModal = document.getElementById('template-editor-modal');
+        if (templateModal) templateModal.classList.remove('hidden');
+
+        // Clear the flags (callback clears these, but do it here too for cancel case)
+        window.editingFromTemplateEditor = false;
+        window.templateExerciseEditCallback = null;
+    } else {
+        // Return to exercise manager (normal behavior)
+        const exerciseManager = document.getElementById('exercise-manager-section');
+        if (exerciseManager) exerciseManager.classList.remove('hidden');
+    }
+
+    currentEditingExercise = null;
+    selectedEquipmentId = null;
+    selectedEquipmentData = null;
+}
+
+// Populate the edit form with exercise data
+function populateEditForm(exercise) {
+    document.getElementById('edit-exercise-name').value = exercise.name || '';
+    document.getElementById('edit-exercise-body-part').value = exercise.bodyPart || 'Chest';
+    document.getElementById('edit-exercise-equipment-type').value = exercise.equipmentType || 'Machine';
+    document.getElementById('edit-exercise-sets').value = exercise.sets || 3;
+    document.getElementById('edit-exercise-reps').value = exercise.reps || 10;
+    document.getElementById('edit-exercise-weight').value = exercise.weight || 50;
+    document.getElementById('edit-exercise-video').value = exercise.video || '';
+    document.getElementById('edit-equipment-video').value = exercise.equipmentVideo || '';
+}
+
+// Clear the edit form
+function clearEditForm() {
+    document.getElementById('edit-exercise-name').value = '';
+    document.getElementById('edit-exercise-body-part').value = 'Chest';
+    document.getElementById('edit-exercise-equipment-type').value = 'Machine';
+    document.getElementById('edit-exercise-sets').value = 3;
+    document.getElementById('edit-exercise-reps').value = 10;
+    document.getElementById('edit-exercise-weight').value = 50;
+    document.getElementById('edit-exercise-video').value = '';
+    document.getElementById('edit-equipment-name').value = '';
+    document.getElementById('edit-equipment-location').value = '';
+    document.getElementById('edit-equipment-video').value = '';
+}
+
+// Populate equipment list for the full-screen edit section
+// Only shows equipment that has been used with this specific exercise
+async function populateEquipmentListForSection(exerciseName = null, preselectedEquipment = null, preselectedLocation = null) {
+    if (!workoutManager) {
+        workoutManager = new FirebaseWorkoutManager(AppState);
+    }
+
+    const listEl = document.getElementById('edit-equipment-list');
+    const selectedDisplay = document.getElementById('edit-selected-equipment');
+    const selectedText = document.getElementById('edit-selected-equipment-text');
+
+    // Reset selection state
+    selectedEquipmentId = null;
+    selectedEquipmentData = null;
+    if (selectedDisplay) selectedDisplay.classList.add('hidden');
+
+    try {
+        // Only get equipment associated with THIS exercise
+        let exerciseEquipment = [];
+        if (exerciseName) {
+            exerciseEquipment = await workoutManager.getEquipmentForExercise(exerciseName);
+        }
+
+        if (!listEl) return;
+
+        if (exerciseEquipment.length === 0) {
+            listEl.innerHTML = '<div class="edit-equipment-empty">No equipment saved for this exercise</div>';
+            return;
+        }
+
+        // Render equipment items
+        listEl.innerHTML = exerciseEquipment.map(eq => `
+            <div class="edit-equipment-item" data-equipment-id="${eq.id}" data-name="${eq.name}" data-location="${eq.location || ''}">
+                <div class="edit-equipment-item-info">
+                    <div class="edit-equipment-item-name">${eq.name}</div>
+                    ${eq.location ? `<div class="edit-equipment-item-location">${eq.location}</div>` : ''}
+                </div>
+                <button type="button" class="edit-equipment-item-delete" data-equipment-id="${eq.id}" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `).join('');
+
+        // Add click handlers for selection
+        listEl.querySelectorAll('.edit-equipment-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.edit-equipment-item-delete')) return;
+                selectEquipmentItemForSection(item);
+            });
+        });
+
+        // Add click handlers for delete buttons
+        listEl.querySelectorAll('.edit-equipment-item-delete').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                deleteEquipmentItem(btn.dataset.equipmentId);
+            });
+        });
+
+        // Pre-select equipment if editing an exercise with equipment
+        if (preselectedEquipment) {
+            const matchingItem = listEl.querySelector(
+                `.edit-equipment-item[data-name="${preselectedEquipment}"]${preselectedLocation ? `[data-location="${preselectedLocation}"]` : ''}`
+            );
+            if (matchingItem) {
+                selectEquipmentItemForSection(matchingItem);
+            }
+        }
+
+    } catch (error) {
+        console.error('❌ Error populating equipment list:', error);
+        if (listEl) {
+            listEl.innerHTML = '<div class="edit-equipment-empty">Error loading equipment</div>';
+        }
+    }
+}
+
+// Select an equipment item (for section)
+function selectEquipmentItemForSection(item) {
+    const listEl = document.getElementById('edit-equipment-list');
+    const selectedDisplay = document.getElementById('edit-selected-equipment');
+    const selectedText = document.getElementById('edit-selected-equipment-text');
+
+    // Clear previous selection
+    listEl?.querySelectorAll('.edit-equipment-item').forEach(i => i.classList.remove('selected'));
+
+    // Mark as selected
+    item.classList.add('selected');
+
+    // Store selection data
+    selectedEquipmentId = item.dataset.equipmentId;
+    selectedEquipmentData = {
+        name: item.dataset.name,
+        location: item.dataset.location || null
+    };
+
+    // Update display
+    if (selectedDisplay && selectedText) {
+        const displayText = selectedEquipmentData.location
+            ? `${selectedEquipmentData.name} @ ${selectedEquipmentData.location}`
+            : selectedEquipmentData.name;
+        selectedText.textContent = displayText;
+        selectedDisplay.classList.remove('hidden');
+    }
+
+    // Clear the "add new" inputs since we selected existing
+    const nameInput = document.getElementById('edit-equipment-name');
+    const locationInput = document.getElementById('edit-equipment-location');
+    if (nameInput) nameInput.value = '';
+    if (locationInput) locationInput.value = '';
+}
+
+// Clear selected equipment (works with full-screen edit section)
+export function clearSelectedEquipment() {
+    const listEl = document.getElementById('edit-equipment-list');
+    const selectedDisplay = document.getElementById('edit-selected-equipment');
+
+    // Clear selection state
+    selectedEquipmentId = null;
+    selectedEquipmentData = null;
+
+    // Clear visual selection
+    listEl?.querySelectorAll('.edit-equipment-item').forEach(i => i.classList.remove('selected'));
+
+    // Hide display
+    if (selectedDisplay) selectedDisplay.classList.add('hidden');
+}
+
+// Delete equipment item
+async function deleteEquipmentItem(equipmentId) {
+    if (!confirm('Delete this equipment? It will be removed from your saved equipment list.')) {
+        return;
+    }
+
+    try {
+        if (!workoutManager) {
+            workoutManager = new FirebaseWorkoutManager(AppState);
+        }
+
+        await workoutManager.deleteEquipment(equipmentId);
+        showNotification('Equipment deleted', 'success');
+
+        // If this was the selected equipment, clear selection
+        if (selectedEquipmentId === equipmentId) {
+            clearSelectedEquipment();
+        }
+
+        // Refresh the equipment list for this exercise
+        const exerciseName = currentEditingExercise?.name || currentEditingExercise?.machine ||
+                            document.getElementById('edit-exercise-name')?.value.trim() || null;
+        await populateEquipmentListForSection(exerciseName);
+
+    } catch (error) {
+        console.error('❌ Error deleting equipment:', error);
+        showNotification('Error deleting equipment', 'error');
+    }
+}
+
+// Add equipment to list instantly (from the Add Equipment button in full-screen section)
+export async function addEquipmentToList() {
+    const nameInput = document.getElementById('edit-equipment-name');
+    const locationInput = document.getElementById('edit-equipment-location');
+    const videoInput = document.getElementById('edit-equipment-video');
+
+    const equipmentName = nameInput?.value.trim();
+    const locationName = locationInput?.value.trim();
+    const videoUrl = videoInput?.value.trim();
+
+    if (!equipmentName) {
+        showNotification('Enter an equipment name', 'warning');
+        nameInput?.focus();
+        return;
+    }
+
+    // Get the current exercise name
+    const exerciseName = currentEditingExercise?.name || currentEditingExercise?.machine ||
+                        document.getElementById('edit-exercise-name')?.value.trim() || null;
+
+    if (!exerciseName) {
+        showNotification('Enter exercise name first', 'warning');
+        document.getElementById('edit-exercise-name')?.focus();
+        return;
+    }
+
+    try {
+        if (!workoutManager) {
+            workoutManager = new FirebaseWorkoutManager(AppState);
+        }
+
+        // Save the new equipment AND associate it with this exercise (including video)
+        await workoutManager.getOrCreateEquipment(equipmentName, locationName, exerciseName, videoUrl);
+
+        // Clear the input fields
+        if (nameInput) nameInput.value = '';
+        if (locationInput) locationInput.value = '';
+        if (videoInput) videoInput.value = '';
+
+        // Refresh the list and auto-select the new equipment
+        await populateEquipmentListForSection(exerciseName, equipmentName, locationName);
+
+        showNotification('Equipment added!', 'success');
+
+    } catch (error) {
+        console.error('❌ Error adding equipment:', error);
+        showNotification('Error adding equipment', 'error');
+    }
 }
 
 // Close add exercise modal
@@ -278,46 +582,31 @@ export function closeAddExerciseModal() {
     }
 }
 
-// Edit exercise
+// Edit exercise - opens full-screen edit section
 export function editExercise(exerciseId) {
     const exercise = allExercises.find(ex => ex.id === exerciseId);
     if (!exercise) return;
 
-    currentEditingExercise = exercise;
-
-    // Populate form
-    const nameInput = document.getElementById('new-exercise-name');
-    const bodyPartSelect = document.getElementById('new-exercise-body-part');
-    const equipmentSelect = document.getElementById('new-exercise-equipment');
-    const setsInput = document.getElementById('new-exercise-sets');
-    const repsInput = document.getElementById('new-exercise-reps');
-    const weightInput = document.getElementById('new-exercise-weight');
-    const videoInput = document.getElementById('new-exercise-video');
-
-    if (nameInput) nameInput.value = exercise.name;
-    if (bodyPartSelect) bodyPartSelect.value = exercise.bodyPart;
-    if (equipmentSelect) equipmentSelect.value = exercise.equipmentType;
-    if (setsInput) setsInput.value = exercise.sets;
-    if (repsInput) repsInput.value = exercise.reps;
-    if (weightInput) weightInput.value = exercise.weight;
-    if (videoInput) videoInput.value = exercise.video || '';
-
-    const title = document.getElementById('add-exercise-modal-title');
-    if (title) {
-        title.textContent = exercise.isOverride ? 'Edit Your Version' :
-                           exercise.isDefault ? 'Customize Exercise' :
-                           'Edit Exercise';
-    }
-
-    const modal = document.getElementById('add-exercise-modal');
-    if (modal) modal.classList.remove('hidden');
-
-    nameInput?.focus();
+    openEditExerciseSection(exercise);
 }
 
 // Save exercise
 export async function saveExercise(event) {
     event.preventDefault();
+
+    // Get equipment from EITHER selected item OR new input fields
+    let equipmentName = '';
+    let locationName = '';
+
+    if (selectedEquipmentData) {
+        // Use selected equipment from list
+        equipmentName = selectedEquipmentData.name;
+        locationName = selectedEquipmentData.location || '';
+    } else {
+        // Check for new equipment entry
+        equipmentName = document.getElementById('new-exercise-machine-name')?.value.trim() || '';
+        locationName = document.getElementById('new-exercise-location')?.value.trim() || '';
+    }
 
     const formData = {
         name: document.getElementById('new-exercise-name')?.value.trim() || '',
@@ -326,7 +615,9 @@ export async function saveExercise(event) {
         sets: parseInt(document.getElementById('new-exercise-sets')?.value) || 3,
         reps: parseInt(document.getElementById('new-exercise-reps')?.value) || 10,
         weight: parseInt(document.getElementById('new-exercise-weight')?.value) || 50,
-        video: document.getElementById('new-exercise-video')?.value.trim() || ''
+        video: document.getElementById('new-exercise-video')?.value.trim() || '',
+        equipment: equipmentName || null,
+        equipmentLocation: locationName || null
     };
 
     if (!formData.name) {
@@ -353,6 +644,11 @@ export async function saveExercise(event) {
         } else {
             // New exercise
             await workoutManager.saveCustomExercise(formData, false);
+        }
+
+        // If new equipment was entered (not selected from list), save it
+        if (equipmentName && !selectedEquipmentData) {
+            await workoutManager.getOrCreateEquipment(equipmentName, locationName, formData.name);
         }
 
         showNotification(isEditing ? 'Exercise updated!' : 'Exercise created!', 'success');
@@ -419,5 +715,153 @@ export async function deleteExercise(exerciseId) {
             console.error('❌ Error deleting exercise:', error);
             alert('Error processing request: ' + error.message);
         }
+    }
+}
+
+// Delete exercise from full-screen section
+export async function deleteExerciseFromSection() {
+    if (!currentEditingExercise) {
+        showNotification('No exercise selected', 'error');
+        return;
+    }
+
+    const exercise = currentEditingExercise;
+    let confirmMessage;
+    if (exercise.isDefault && !exercise.isOverride) {
+        confirmMessage = `Hide "${exercise.name}" from your library? (You can unhide it later if needed)`;
+    } else if (exercise.isOverride) {
+        confirmMessage = `Revert "${exercise.name}" to default version? (This will remove your custom changes)`;
+    } else if (exercise.isCustom) {
+        confirmMessage = `Permanently delete "${exercise.name}"? This cannot be undone.`;
+    } else {
+        confirmMessage = `Delete "${exercise.name}"?`;
+    }
+
+    if (confirm(confirmMessage)) {
+        try {
+            // Initialize workout manager if needed
+            if (!workoutManager) {
+                workoutManager = new FirebaseWorkoutManager(AppState);
+            }
+
+            // Delete from Firebase using universal delete method
+            await workoutManager.deleteUniversalExercise(exercise.id, exercise);
+
+            showNotification(
+                exercise.isCustom ? 'Exercise deleted!' :
+                exercise.isOverride ? 'Reverted to default!' :
+                'Exercise hidden!',
+                'success'
+            );
+
+            // Refresh AppState exercise database
+            AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
+            await loadExercises();
+
+            // Close the edit section and return to exercise manager
+            closeEditExerciseSection();
+
+        } catch (error) {
+            console.error('❌ Error deleting exercise:', error);
+            alert('Error processing request: ' + error.message);
+        }
+    }
+}
+
+// Save exercise from full-screen section
+export async function saveExerciseFromSection() {
+    // Get equipment from EITHER selected item OR new input fields
+    let equipmentName = '';
+    let locationName = '';
+
+    if (selectedEquipmentData) {
+        // Use selected equipment from list
+        equipmentName = selectedEquipmentData.name;
+        locationName = selectedEquipmentData.location || '';
+    } else {
+        // Check for new equipment entry (not yet added to list)
+        const newEquipName = document.getElementById('edit-equipment-name')?.value.trim() || '';
+        const newLocName = document.getElementById('edit-equipment-location')?.value.trim() || '';
+        if (newEquipName) {
+            equipmentName = newEquipName;
+            locationName = newLocName;
+        }
+    }
+
+    const formData = {
+        name: document.getElementById('edit-exercise-name')?.value.trim() || '',
+        bodyPart: document.getElementById('edit-exercise-body-part')?.value || 'Chest',
+        equipmentType: document.getElementById('edit-exercise-equipment-type')?.value || 'Machine',
+        sets: parseInt(document.getElementById('edit-exercise-sets')?.value) || 3,
+        reps: parseInt(document.getElementById('edit-exercise-reps')?.value) || 10,
+        weight: parseInt(document.getElementById('edit-exercise-weight')?.value) || 50,
+        video: document.getElementById('edit-exercise-video')?.value.trim() || '',
+        equipment: equipmentName || null,
+        equipmentLocation: locationName || null,
+        equipmentVideo: document.getElementById('edit-equipment-video')?.value.trim() || null
+    };
+
+    if (!formData.name) {
+        showNotification('Please enter an exercise name', 'warning');
+        document.getElementById('edit-exercise-name')?.focus();
+        return;
+    }
+
+    // Check if we're editing from template editor - if so, call callback instead of saving to Firebase
+    if (window.editingFromTemplateEditor && typeof window.templateExerciseEditCallback === 'function') {
+        // Call the callback with the form data
+        window.templateExerciseEditCallback(formData);
+
+        // Close section and return to template editor
+        closeEditExerciseSection();
+        return;
+    }
+
+    try {
+        // Save to Firebase using FirebaseWorkoutManager
+        if (!workoutManager) {
+            workoutManager = new FirebaseWorkoutManager(AppState);
+        }
+
+        const isEditing = !!currentEditingExercise;
+
+        if (isEditing) {
+            // Merge with existing exercise data
+            const exerciseToSave = {
+                ...currentEditingExercise,
+                ...formData,
+                id: currentEditingExercise.id
+            };
+            await workoutManager.saveUniversalExercise(exerciseToSave, true);
+        } else {
+            // New exercise
+            await workoutManager.saveCustomExercise(formData, false);
+        }
+
+        // If new equipment was entered (not selected from list), save it
+        if (equipmentName && !selectedEquipmentData) {
+            await workoutManager.getOrCreateEquipment(equipmentName, locationName, formData.name);
+        }
+
+        showNotification(isEditing ? 'Exercise updated!' : 'Exercise created!', 'success');
+
+        // Close section and return to exercise manager
+        closeEditExerciseSection();
+
+        // Refresh AppState exercise database
+        AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
+
+        // Refresh exercise manager section
+        await loadExercises();
+
+        // Also refresh the exercise-library-modal if it's open (used in workout management)
+        const libraryModal = document.getElementById('exercise-library-modal');
+        if (libraryModal && !libraryModal.classList.contains('hidden')) {
+            window.dispatchEvent(new CustomEvent('exerciseLibraryUpdated'));
+        }
+
+    } catch (error) {
+        console.error('❌ Error saving exercise:', error);
+        showNotification('Error saving exercise: ' + error.message, 'error');
     }
 }

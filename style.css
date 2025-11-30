@@ -1048,6 +1048,18 @@ body {
     white-space: nowrap;
 }
 
+.template-exercise-equipment {
+    font-size: 0.7rem;
+    color: var(--primary);
+    background: rgba(64, 224, 208, 0.1);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+}
+
 .template-preview {
     margin: 1rem 0;
 }
@@ -1176,6 +1188,26 @@ body {
     color: var(--text-primary);
 }
 
+.exercise-equipment-tag {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.exercise-equipment-tag::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    opacity: 0.7;
+}
+
 .exercise-progress-row {
     display: flex;
     align-items: center;
@@ -1188,6 +1220,14 @@ body {
     display: flex;
     gap: 0.75rem;
     justify-content: center;
+}
+
+.modal-equipment-subtitle {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    display: block;
+    margin-top: 0.25rem;
 }
 
 .btn-text {
@@ -2424,6 +2464,73 @@ body {
     max-height: 0;
 }
 
+/* New simplified Exercise Manager styles */
+.exercise-manager-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+
+.exercise-manager-group-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.exercise-manager-group-header .exercise-count {
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.exercise-manager-group-items {
+    display: flex;
+    flex-direction: column;
+}
+
+.exercise-manager-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-top: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.exercise-manager-row:last-child {
+    border-radius: 0 0 6px 6px;
+}
+
+.exercise-manager-row:hover {
+    background: var(--bg-secondary);
+}
+
+.exercise-manager-name {
+    flex: 1;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.exercise-manager-actions {
+    display: flex;
+    gap: 0.5rem;
+    opacity: 0.5;
+    transition: opacity 0.2s ease;
+}
+
+.exercise-manager-row:hover .exercise-manager-actions {
+    opacity: 1;
+}
+
 /* Compact Exercise Cards - Removed (was duplicate) */
 /* .exercise-card {
     display: flex;
@@ -3004,6 +3111,20 @@ body {
     border-bottom: 1px solid var(--border);
 }
 
+/* Equipment Change Link (in modal title) */
+.equipment-change-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+    opacity: 0.8;
+}
+
+.equipment-change-link:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
 /* Exercise Table - Compact */
 .exercise-table {
     width: 100%;
@@ -3115,42 +3236,66 @@ body {
 }
 
 .exercise-library-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
     max-height: 60vh;
     overflow-y: auto;
+    padding: 0.5rem;
+}
+
+/* Grouped exercise library */
+.library-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.library-group-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 0.75rem 0.25rem;
+    background: var(--bg-secondary);
+    border-radius: 6px 6px 0 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.library-group-items {
+    display: flex;
+    flex-direction: column;
 }
 
 .library-exercise-card {
+    display: flex;
+    align-items: center;
     background: var(--bg-tertiary);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem;
+    border-top: none;
+    padding: 0.75rem 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.15s ease;
+}
+
+.library-group-items .library-exercise-card:last-child {
+    border-radius: 0 0 6px 6px;
 }
 
 .library-exercise-card:hover {
     background: var(--bg-secondary);
     border-color: var(--primary);
-    transform: translateY(-2px);
+    border-top: 1px solid var(--primary);
 }
 
-.library-exercise-card h5 {
-    margin: 0 0 0.5rem 0;
+.library-exercise-card:active {
+    transform: scale(0.99);
+}
+
+.library-exercise-name {
     color: var(--text-primary);
-}
-
-.library-exercise-info {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-}
-
-.library-exercise-stats {
-    color: var(--text-secondary);
-    font-size: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
 }
 
 /* Quick Add Section */
@@ -4462,6 +4607,36 @@ body {
     font-size: 0.875rem;
     color: var(--text-secondary);
     font-style: italic;
+}
+
+.form-help {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.form-section-divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0 1rem 0;
+    gap: 1rem;
+}
+
+.form-section-divider::before,
+.form-section-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.form-section-divider span {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    white-space: nowrap;
 }
 
 /* Day Selector */
@@ -6663,4 +6838,816 @@ img[loading="lazy"].loaded {
 /* Manual Workout Modal */
 #add-manual-workout-modal {
     z-index: 520;
+}
+
+/* Equipment Picker Modal - must be above exercise library modal */
+#equipment-picker-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 9999 !important;
+}
+
+#equipment-picker-modal:not(.hidden) {
+    background: rgba(0, 0, 0, 0.8) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+}
+
+#equipment-picker-modal .modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+}
+
+.equipment-picker-subtitle {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.equipment-picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.equipment-option {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.equipment-option:hover {
+    background: var(--bg-primary);
+    border-color: var(--primary);
+}
+
+.equipment-option.selected {
+    background: rgba(64, 224, 208, 0.1);
+    border-color: var(--primary);
+}
+
+.equipment-option-radio {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--text-secondary);
+    border-radius: 50%;
+    margin-right: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.equipment-option.selected .equipment-option-radio {
+    border-color: var(--primary);
+}
+
+.equipment-option.selected .equipment-option-radio::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--primary);
+    border-radius: 50%;
+}
+
+.equipment-option-details {
+    flex: 1;
+}
+
+.equipment-option-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.equipment-option-location {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.equipment-picker-empty {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Equipment Picker Add Form - grouped inputs */
+.equipment-picker-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.equipment-picker-add-form .input-field {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+}
+
+.equipment-picker-add-form .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+}
+
+/* Template Exercise Edit Modal - must be above template editor modal */
+#template-exercise-edit-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 9998 !important;
+}
+
+#template-exercise-edit-modal:not(.hidden) {
+    background: rgba(0, 0, 0, 0.8) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px !important;
+}
+
+#template-exercise-edit-modal .modal-content {
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius);
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+}
+
+#template-exercise-edit-modal .form-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+#template-exercise-edit-modal .form-row .form-group {
+    margin-bottom: 0;
+}
+
+/* Equipment Add Section */
+.equipment-add-section {
+    margin-bottom: 0.75rem;
+}
+
+.equipment-add-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.equipment-input {
+    flex: 2;
+    font-size: 1rem !important;
+    padding: 0.75rem !important;
+}
+
+.equipment-input-small {
+    flex: 1;
+    font-size: 1rem !important;
+    padding: 0.75rem !important;
+}
+
+.btn-add-equipment {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: var(--bg-primary);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.btn-add-equipment:hover {
+    background: var(--primary-dark);
+    transform: scale(1.05);
+}
+
+.btn-add-equipment:active {
+    transform: scale(0.95);
+}
+
+/* Selected Equipment Display */
+.selected-equipment-display {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: rgba(64, 224, 208, 0.15);
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    margin: 0.75rem 0;
+}
+
+.selected-equipment-icon {
+    color: var(--primary);
+    font-size: 1.25rem;
+}
+
+.selected-equipment-text {
+    flex: 1;
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 1rem;
+}
+
+.btn-clear-equipment {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.btn-clear-equipment:hover {
+    background: rgba(255, 100, 100, 0.2);
+    color: var(--danger);
+}
+
+/* Equipment List Section */
+.equipment-list-section {
+    margin-top: 0.5rem;
+}
+
+.equipment-list-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+/* Exercise Equipment List */
+.exercise-equipment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 160px;
+    overflow-y: auto;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+.exercise-equipment-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.exercise-equipment-list::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 3px;
+}
+
+.equipment-list-empty {
+    text-align: center;
+    padding: 1rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+.equipment-list-item {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--bg-secondary);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    gap: 0.75rem;
+}
+
+.equipment-list-item:hover {
+    background: var(--bg-primary);
+    border-color: var(--primary);
+}
+
+.equipment-list-item.selected {
+    background: rgba(64, 224, 208, 0.15);
+    border-color: var(--primary);
+}
+
+.equipment-list-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.equipment-list-item-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.equipment-list-item-location {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.equipment-list-item-delete {
+    opacity: 0.3;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.equipment-list-item:hover .equipment-list-item-delete {
+    opacity: 1;
+}
+
+.equipment-list-item-delete:hover {
+    color: var(--danger);
+}
+
+/* ============================================
+   EDIT EXERCISE SECTION (Full Screen)
+   ============================================ */
+
+#edit-exercise-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--bg-primary);
+    z-index: 1000;
+    overflow-y: auto;
+}
+
+.edit-exercise-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0 1rem 2rem;
+}
+
+/* Header */
+.edit-exercise-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 10;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.edit-exercise-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.btn-back {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Delete Exercise Button (bottom of edit form) */
+.edit-delete-container {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-delete-exercise {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-delete-exercise:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.btn-save {
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    background: var(--primary);
+    border: none;
+    color: var(--bg-primary);
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.btn-save:hover {
+    background: var(--primary-dark);
+    transform: scale(1.02);
+}
+
+/* Form Sections */
+.edit-exercise-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.edit-section {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.edit-section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+}
+
+.edit-section-title .optional-tag {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.edit-section-hint {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 0 1rem 0;
+}
+
+.edit-subsection-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin: 1.25rem 0 0.75rem 0;
+}
+
+.edit-subsection-title:first-of-type {
+    margin-top: 0;
+}
+
+/* Input Styles */
+.edit-input-large {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+}
+
+.edit-input-large:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.edit-input-large::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.edit-input {
+    flex: 1;
+    padding: 0.85rem;
+    font-size: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-width: 0;
+}
+
+.edit-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.edit-input-number {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.edit-input-number:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.edit-select {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.edit-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* Field Layouts */
+.edit-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.edit-row-three {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.edit-field label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* Equipment Section */
+.edit-selected-equipment {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(64, 224, 208, 0.15);
+    border: 2px solid var(--primary);
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.edit-selected-equipment i {
+    color: var(--primary);
+    font-size: 1.25rem;
+}
+
+.edit-selected-equipment span {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.btn-clear {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-clear:hover {
+    background: rgba(255, 100, 100, 0.2);
+    color: var(--danger);
+}
+
+/* Equipment List */
+.edit-equipment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.edit-equipment-empty {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.edit-equipment-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--bg-primary);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.edit-equipment-item:hover {
+    border-color: var(--primary);
+}
+
+.edit-equipment-item.selected {
+    background: rgba(64, 224, 208, 0.1);
+    border-color: var(--primary);
+}
+
+.edit-equipment-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.edit-equipment-item-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.edit-equipment-item-location {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+}
+
+.edit-equipment-item-delete {
+    opacity: 0.3;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.edit-equipment-item:hover .edit-equipment-item-delete {
+    opacity: 1;
+}
+
+.edit-equipment-item-delete:hover {
+    color: var(--danger);
+}
+
+/* Add Equipment Row */
+.edit-add-equipment {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Equipment Form - stacked layout */
+.edit-equipment-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.edit-input-full {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.edit-input-full:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.edit-input-full::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
+
+.btn-add-equipment {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    background: var(--primary);
+    border: none;
+    color: var(--bg-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin-top: 0.25rem;
+}
+
+.btn-add-equipment:hover {
+    background: var(--primary-dark);
+    transform: scale(1.01);
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+    .edit-row {
+        grid-template-columns: 1fr;
+    }
+
+    .edit-row-three {
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .edit-input-number {
+        padding: 0.75rem 0.5rem;
+        font-size: 1rem;
+    }
+
+    .edit-exercise-header h2 {
+        font-size: 1.1rem;
+    }
+
+    .btn-save {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
 }

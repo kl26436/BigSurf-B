@@ -166,10 +166,19 @@ function createTemplateCard(template) {
             const sets = ex.sets || 3;
             const reps = ex.reps || 10;
             const weight = ex.weight || 50;
+            // Build equipment tag if equipment is specified
+            let equipmentTag = '';
+            if (ex.equipment) {
+                const equipmentText = ex.equipmentLocation
+                    ? `${ex.equipment} @ ${ex.equipmentLocation}`
+                    : ex.equipment;
+                equipmentTag = `<span class="template-exercise-equipment">${equipmentText}</span>`;
+            }
             return `
                 <div class="template-exercise-item">
                     <span class="exercise-number">${index + 1}.</span>
                     <span class="exercise-name">${ex.name || ex.machine}</span>
+                    ${equipmentTag}
                     <span class="exercise-details">${sets}×${reps} @ ${weight}lbs</span>
                 </div>
             `;
@@ -524,10 +533,10 @@ function createTemplateExerciseItem(exercise, index) {
             </div>
         </div>
         <div class="exercise-item-actions">
-            <button class="btn btn-secondary btn-small" onclick="editTemplateExercise(${index})">
+            <button type="button" class="btn btn-secondary btn-small" onclick="editTemplateExercise(${index})">
                 <i class="fas fa-edit"></i>
             </button>
-            <button class="btn btn-danger btn-small" onclick="removeTemplateExercise(${index})">
+            <button type="button" class="btn btn-danger btn-small" onclick="removeTemplateExercise(${index})">
                 <i class="fas fa-trash"></i>
             </button>
         </div>
@@ -540,6 +549,9 @@ export function addExerciseToTemplate() {
     openExerciseLibrary('template');
 }
 
+// Store which template exercise index is being edited
+let editingTemplateExerciseIndex = null;
+
 export function editTemplateExercise(index) {
     if (!currentEditingTemplate || index >= currentEditingTemplate.exercises.length) {
         console.error('❌ Invalid exercise index:', index);
@@ -547,10 +559,49 @@ export function editTemplateExercise(index) {
     }
 
     const exercise = currentEditingTemplate.exercises[index];
+    editingTemplateExerciseIndex = index;
 
-    // Prompt for new values
+    // Use the full Exercise Manager edit section (same one used in Exercise Library)
+    // This provides the full equipment management UI
+    if (window.openEditExerciseSection) {
+        // Set flag so we know to return to template editor after saving
+        window.editingFromTemplateEditor = true;
+        window.templateExerciseEditCallback = (updatedExercise) => {
+            // Update the template exercise with new values
+            if (editingTemplateExerciseIndex !== null && currentEditingTemplate) {
+                const ex = currentEditingTemplate.exercises[editingTemplateExerciseIndex];
+                ex.name = updatedExercise.name;
+                ex.machine = updatedExercise.name;
+                ex.sets = updatedExercise.sets;
+                ex.reps = updatedExercise.reps;
+                ex.weight = updatedExercise.weight;
+                ex.equipment = updatedExercise.equipment;
+                ex.equipmentLocation = updatedExercise.equipmentLocation;
+                ex.video = updatedExercise.video;
+                renderTemplateExercises();
+                showNotification('Exercise updated', 'success');
+            }
+            editingTemplateExerciseIndex = null;
+            window.editingFromTemplateEditor = false;
+            window.templateExerciseEditCallback = null;
+        };
+
+        // Open the full edit section with this exercise's data
+        window.openEditExerciseSection({
+            ...exercise,
+            name: exercise.name || exercise.machine,
+            isTemplateExercise: true
+        });
+    } else {
+        // Fallback to simple modal if edit section not available
+        editTemplateExerciseFallback(index, exercise);
+    }
+}
+
+// Fallback if modal doesn't exist
+function editTemplateExerciseFallback(index, exercise) {
     const newName = prompt('Exercise name:', exercise.name);
-    if (newName === null) return; // User cancelled
+    if (newName === null) return;
 
     const newSets = prompt('Number of sets:', exercise.sets);
     if (newSets === null) return;
@@ -561,14 +612,53 @@ export function editTemplateExercise(index) {
     const newWeight = prompt('Weight (lbs):', exercise.weight);
     if (newWeight === null) return;
 
-    // Update exercise
     exercise.name = newName.trim() || exercise.name;
     exercise.sets = parseInt(newSets) || exercise.sets;
     exercise.reps = parseInt(newReps) || exercise.reps;
     exercise.weight = parseFloat(newWeight) || exercise.weight;
 
-    // Re-render
     renderTemplateExercises();
+}
+
+export function closeTemplateExerciseEdit() {
+    const modal = document.getElementById('template-exercise-edit-modal');
+    if (modal) modal.classList.add('hidden');
+    editingTemplateExerciseIndex = null;
+}
+
+export function saveTemplateExerciseEdit() {
+    if (editingTemplateExerciseIndex === null || !currentEditingTemplate) {
+        closeTemplateExerciseEdit();
+        return;
+    }
+
+    const exercise = currentEditingTemplate.exercises[editingTemplateExerciseIndex];
+
+    // Get values from form
+    const name = document.getElementById('template-exercise-name')?.value.trim();
+    const sets = parseInt(document.getElementById('template-exercise-sets')?.value) || 3;
+    const reps = parseInt(document.getElementById('template-exercise-reps')?.value) || 10;
+    const weight = parseFloat(document.getElementById('template-exercise-weight')?.value) || 50;
+    const equipment = document.getElementById('template-exercise-equipment')?.value.trim() || null;
+    const location = document.getElementById('template-exercise-location')?.value.trim() || null;
+
+    if (!name) {
+        showNotification('Please enter an exercise name', 'warning');
+        return;
+    }
+
+    // Update exercise
+    exercise.name = name;
+    exercise.machine = name;
+    exercise.sets = sets;
+    exercise.reps = reps;
+    exercise.weight = weight;
+    exercise.equipment = equipment;
+    exercise.equipmentLocation = location;
+
+    closeTemplateExerciseEdit();
+    renderTemplateExercises();
+    showNotification('Exercise updated', 'success');
 }
 
 export function removeTemplateExercise(index) {
@@ -664,7 +754,7 @@ export function filterExerciseLibrary() {
 function renderExerciseLibrary() {
     const grid = document.getElementById('exercise-library-grid');
     if (!grid) return;
-    
+
     if (filteredExercises.length === 0) {
         grid.innerHTML = `
             <div class="empty-state">
@@ -675,43 +765,77 @@ function renderExerciseLibrary() {
         `;
         return;
     }
-    
-    grid.innerHTML = '';
+
+    // Group exercises by body part
+    const grouped = {};
     filteredExercises.forEach(exercise => {
-        const card = createLibraryExerciseCard(exercise);
-        grid.appendChild(card);
+        const bodyPart = exercise.bodyPart || 'General';
+        if (!grouped[bodyPart]) {
+            grouped[bodyPart] = [];
+        }
+        grouped[bodyPart].push(exercise);
+    });
+
+    // Sort body parts alphabetically
+    const sortedBodyParts = Object.keys(grouped).sort();
+
+    // Render grouped exercises
+    grid.innerHTML = sortedBodyParts.map(bodyPart => {
+        const exercises = grouped[bodyPart];
+        const exerciseCards = exercises.map(exercise => {
+            const exerciseName = exercise.name || exercise.machine;
+            return `<div class="library-exercise-card" data-exercise-id="${exercise.id || exerciseName}">
+                <span class="library-exercise-name">${exerciseName}</span>
+            </div>`;
+        }).join('');
+
+        return `
+            <div class="library-group">
+                <div class="library-group-header">${bodyPart}</div>
+                <div class="library-group-items">${exerciseCards}</div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click handlers
+    grid.querySelectorAll('.library-exercise-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const exerciseId = card.dataset.exerciseId;
+            const exercise = filteredExercises.find(ex =>
+                (ex.id || ex.name || ex.machine) === exerciseId
+            );
+            if (exercise) selectExerciseFromLibrary(exercise);
+        });
     });
 }
 
 function createLibraryExerciseCard(exercise) {
     const card = document.createElement('div');
     card.className = 'library-exercise-card';
-    
+
+    const exerciseName = exercise.name || exercise.machine;
+
     card.innerHTML = `
-        <h5>${exercise.name || exercise.machine}</h5>
-        <div class="library-exercise-info">
-            ${exercise.bodyPart || 'General'} • ${exercise.equipmentType || 'Machine'}
-            ${exercise.isCustom ? ' • Custom' : ''}
-        </div>
-        <div class="library-exercise-stats">
-            ${exercise.sets || 3} sets × ${exercise.reps || 10} reps @ ${exercise.weight || 50} lbs
-        </div>
+        <span class="library-exercise-name">${exerciseName}</span>
+        <span class="library-exercise-body-part">${exercise.bodyPart || 'General'}</span>
     `;
-    
+
     card.addEventListener('click', () => selectExerciseFromLibrary(exercise));
-    
+
     return card;
 }
+
+// Pending exercise for equipment selection
+let pendingExerciseForEquipment = null;
 
 function selectExerciseFromLibrary(exercise) {
     const exerciseName = exercise.name || exercise.machine;
 
     // Check if we're adding to active workout
     if (window.addingToActiveWorkout && window.confirmExerciseAddToWorkout) {
-        window.confirmExerciseAddToWorkout(exercise);
-        closeExerciseLibrary();
-        window.addingToActiveWorkout = false;
-        showNotification(`Added "${exerciseName}" to workout`, 'success');
+        // For active workouts, show equipment picker
+        pendingExerciseForEquipment = exercise;
+        showEquipmentPicker(exercise, true);
         return;
     }
 
@@ -727,11 +851,280 @@ function selectExerciseFromLibrary(exercise) {
             return;
         }
 
+        // Show equipment picker before adding
+        pendingExerciseForEquipment = exercise;
+        showEquipmentPicker(exercise, false);
+    }
+}
+
+// Show equipment picker modal
+async function showEquipmentPicker(exercise, isActiveWorkout) {
+    const exerciseName = exercise.name || exercise.machine;
+    const modal = document.getElementById('equipment-picker-modal');
+    const titleEl = document.getElementById('equipment-picker-exercise-name');
+    const listEl = document.getElementById('equipment-picker-list');
+    const newNameInput = document.getElementById('equipment-picker-new-name');
+    const newLocationInput = document.getElementById('equipment-picker-new-location');
+
+    if (titleEl) titleEl.textContent = `for "${exerciseName}"`;
+    if (newNameInput) newNameInput.value = exercise.equipment || '';
+    if (newLocationInput) newLocationInput.value = exercise.equipmentLocation || '';
+
+    // Load equipment that has been used with this exercise
+    try {
+        const workoutManager = new FirebaseWorkoutManager(AppState);
+        const exerciseEquipment = await workoutManager.getEquipmentForExercise(exerciseName);
+        const allEquipment = await workoutManager.getUserEquipment();
+
+        // Render equipment options
+        if (listEl) {
+            if (exerciseEquipment.length > 0) {
+                listEl.innerHTML = exerciseEquipment.map(eq => `
+                    <div class="equipment-option" data-equipment-id="${eq.id}" data-equipment-name="${eq.name}" data-equipment-location="${eq.location || ''}">
+                        <div class="equipment-option-radio"></div>
+                        <div class="equipment-option-details">
+                            <div class="equipment-option-name">${eq.name}</div>
+                            ${eq.location ? `<div class="equipment-option-location">${eq.location}</div>` : ''}
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add click handlers for selection
+                listEl.querySelectorAll('.equipment-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        listEl.querySelectorAll('.equipment-option').forEach(o => o.classList.remove('selected'));
+                        option.classList.add('selected');
+                        // Clear the new equipment inputs when selecting existing
+                        if (newNameInput) newNameInput.value = '';
+                        if (newLocationInput) newLocationInput.value = '';
+                    });
+                });
+            } else {
+                listEl.innerHTML = `<div class="equipment-picker-empty">No equipment saved for this exercise yet</div>`;
+            }
+        }
+
+        // Populate suggestions datalists
+        const equipmentDatalist = document.getElementById('equipment-picker-suggestions');
+        const locationDatalist = document.getElementById('equipment-picker-location-suggestions');
+
+        if (equipmentDatalist) {
+            const equipmentNames = [...new Set(allEquipment.map(eq => eq.name))];
+            equipmentDatalist.innerHTML = equipmentNames.map(name => `<option value="${name}">`).join('');
+        }
+
+        if (locationDatalist) {
+            const locations = [...new Set(allEquipment.filter(eq => eq.location).map(eq => eq.location))];
+            locationDatalist.innerHTML = locations.map(loc => `<option value="${loc}">`).join('');
+        }
+    } catch (error) {
+        console.error('Error loading equipment:', error);
+        if (listEl) {
+            listEl.innerHTML = `<div class="equipment-picker-empty">Error loading equipment</div>`;
+        }
+    }
+
+    // Store whether this is for active workout
+    window.equipmentPickerForActiveWorkout = isActiveWorkout;
+
+    if (modal) modal.classList.remove('hidden');
+}
+
+// Close equipment picker
+export function closeEquipmentPicker() {
+    const modal = document.getElementById('equipment-picker-modal');
+    if (modal) modal.classList.add('hidden');
+    pendingExerciseForEquipment = null;
+    window.equipmentPickerForActiveWorkout = false;
+    window.changingEquipmentDuringWorkout = false;
+}
+
+// Add equipment from picker (saves to list and auto-selects)
+export async function addEquipmentFromPicker() {
+    const nameInput = document.getElementById('equipment-picker-new-name');
+    const locationInput = document.getElementById('equipment-picker-new-location');
+    const videoInput = document.getElementById('equipment-picker-new-video');
+
+    const equipmentName = nameInput?.value.trim();
+    const locationName = locationInput?.value.trim();
+    const videoUrl = videoInput?.value.trim();
+
+    if (!equipmentName) {
+        showNotification('Enter an equipment name', 'warning');
+        nameInput?.focus();
+        return;
+    }
+
+    // Get the exercise name from pending exercise or current workout
+    let exerciseName = null;
+    if (pendingExerciseForEquipment) {
+        exerciseName = pendingExerciseForEquipment.name || pendingExerciseForEquipment.machine;
+    } else if (window.changingEquipmentDuringWorkout && AppState.currentWorkout) {
+        // Get from focused exercise index during active workout equipment change
+        const idx = AppState.focusedExerciseIndex;
+        if (idx !== null && AppState.currentWorkout.exercises[idx]) {
+            exerciseName = AppState.currentWorkout.exercises[idx].machine;
+        }
+    }
+
+    // Fallback: parse exercise name from the modal title (shows "for "Exercise Name"")
+    if (!exerciseName) {
+        const titleEl = document.getElementById('equipment-picker-exercise-name');
+        if (titleEl) {
+            const match = titleEl.textContent.match(/for "(.+)"/);
+            if (match) {
+                exerciseName = match[1];
+            }
+        }
+    }
+
+    if (!exerciseName) {
+        showNotification('No exercise selected', 'error');
+        return;
+    }
+
+    try {
+        const workoutManager = new FirebaseWorkoutManager(AppState);
+        await workoutManager.getOrCreateEquipment(equipmentName, locationName, exerciseName, videoUrl);
+
+        // Clear inputs
+        if (nameInput) nameInput.value = '';
+        if (locationInput) locationInput.value = '';
+        if (videoInput) videoInput.value = '';
+
+        // Refresh the equipment list
+        const exerciseEquipment = await workoutManager.getEquipmentForExercise(exerciseName);
+        const listEl = document.getElementById('equipment-picker-list');
+
+        if (listEl && exerciseEquipment.length > 0) {
+            listEl.innerHTML = exerciseEquipment.map(eq => `
+                <div class="equipment-option ${eq.name === equipmentName ? 'selected' : ''}"
+                     data-equipment-id="${eq.id}"
+                     data-equipment-name="${eq.name}"
+                     data-equipment-location="${eq.location || ''}">
+                    <div class="equipment-option-radio"></div>
+                    <div class="equipment-option-details">
+                        <div class="equipment-option-name">${eq.name}</div>
+                        ${eq.location ? `<div class="equipment-option-location">${eq.location}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Re-add click handlers
+            listEl.querySelectorAll('.equipment-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    listEl.querySelectorAll('.equipment-option').forEach(o => o.classList.remove('selected'));
+                    option.classList.add('selected');
+                    if (nameInput) nameInput.value = '';
+                    if (locationInput) locationInput.value = '';
+                });
+            });
+        }
+
+        showNotification('Equipment added!', 'success');
+
+    } catch (error) {
+        console.error('Error adding equipment:', error);
+        showNotification('Error adding equipment', 'error');
+    }
+}
+
+// Skip equipment selection (no equipment)
+export function skipEquipmentSelection() {
+    // Check if we're changing equipment during a workout
+    if (window.changingEquipmentDuringWorkout && window.applyEquipmentChange) {
+        window.applyEquipmentChange(null, null);
+        closeEquipmentPicker();
+        return;
+    }
+    finalizeExerciseAddition(null, null);
+}
+
+// Confirm equipment selection
+export function confirmEquipmentSelection() {
+    const listEl = document.getElementById('equipment-picker-list');
+    const newNameInput = document.getElementById('equipment-picker-new-name');
+    const newLocationInput = document.getElementById('equipment-picker-new-location');
+    const newVideoInput = document.getElementById('equipment-picker-new-video');
+
+    let equipmentName = null;
+    let equipmentLocation = null;
+    let equipmentVideo = null;
+
+    // Check if existing equipment is selected
+    const selectedOption = listEl?.querySelector('.equipment-option.selected');
+    if (selectedOption) {
+        equipmentName = selectedOption.dataset.equipmentName;
+        equipmentLocation = selectedOption.dataset.equipmentLocation || null;
+    }
+
+    // Check if new equipment was entered
+    const newName = newNameInput?.value.trim();
+    const newLocation = newLocationInput?.value.trim();
+    const newVideo = newVideoInput?.value.trim();
+    if (newName) {
+        equipmentName = newName;
+        equipmentLocation = newLocation || null;
+        equipmentVideo = newVideo || null;
+    }
+
+    // Check if we're changing equipment during a workout
+    if (window.changingEquipmentDuringWorkout && window.applyEquipmentChange) {
+        window.applyEquipmentChange(equipmentName, equipmentLocation, equipmentVideo);
+        closeEquipmentPicker();
+        return;
+    }
+
+    finalizeExerciseAddition(equipmentName, equipmentLocation, equipmentVideo);
+}
+
+// Finalize adding the exercise with equipment info
+async function finalizeExerciseAddition(equipmentName, equipmentLocation, equipmentVideo = null) {
+    if (!pendingExerciseForEquipment) {
+        closeEquipmentPicker();
+        return;
+    }
+
+    const exercise = pendingExerciseForEquipment;
+    const exerciseName = exercise.name || exercise.machine;
+
+    // Save equipment if new (include video)
+    if (equipmentName) {
+        try {
+            const workoutManager = new FirebaseWorkoutManager(AppState);
+            await workoutManager.getOrCreateEquipment(equipmentName, equipmentLocation, exerciseName, equipmentVideo);
+        } catch (error) {
+            console.error('Error saving equipment:', error);
+        }
+    }
+
+    // Handle active workout
+    if (window.equipmentPickerForActiveWorkout && window.confirmExerciseAddToWorkout) {
+        const exerciseWithEquipment = {
+            ...exercise,
+            equipment: equipmentName,
+            equipmentLocation: equipmentLocation
+        };
+        const wasAdded = window.confirmExerciseAddToWorkout(exerciseWithEquipment);
+        closeExerciseLibrary();
+        closeEquipmentPicker();
+        window.addingToActiveWorkout = false;
+        // Only show success if it wasn't a duplicate
+        if (wasAdded) {
+            showNotification(`Added "${exerciseName}" to workout`, 'success');
+        }
+        return;
+    }
+
+    // Handle template editing
+    if (currentEditingTemplate) {
         const templateExercise = {
             name: exerciseName,
-            machine: exercise.machine || exercise.name, // CRITICAL: workout system expects 'machine' field
+            machine: exercise.machine || exercise.name,
             bodyPart: exercise.bodyPart,
             equipmentType: exercise.equipmentType,
+            equipment: equipmentName,
+            equipmentLocation: equipmentLocation,
             sets: exercise.sets || 3,
             reps: exercise.reps || 10,
             weight: exercise.weight || 50,
@@ -741,6 +1134,7 @@ function selectExerciseFromLibrary(exercise) {
         currentEditingTemplate.exercises.push(templateExercise);
         renderTemplateExercises();
         closeExerciseLibrary();
+        closeEquipmentPicker();
         showNotification(`Added "${templateExercise.name}" to workout`, 'success');
     }
 }
@@ -941,9 +1335,10 @@ async function checkForInProgressWorkout(appState) {
             }
             
             // Store in-progress workout globally
+            // Use todaysData.originalWorkout if it exists (contains modified exercise list)
             window.inProgressWorkout = {
                 ...todaysData,
-                originalWorkout: workoutPlan
+                originalWorkout: todaysData.originalWorkout || workoutPlan
             };
             
             // Show the prompt (uses your existing continueInProgressWorkout function)
