@@ -251,6 +251,10 @@ export function showUserInfo(user) {
     if (sidebarProfile) sidebarProfile.classList.remove('hidden');
     if (sidebarUserName) sidebarUserName.textContent = user.displayName || 'User';
     if (sidebarUserEmail) sidebarUserEmail.textContent = user.email || '';
+
+    // Update More menu email
+    const moreMenuEmail = document.getElementById('more-menu-email');
+    if (moreMenuEmail) moreMenuEmail.textContent = user.email || '';
 }
 
 export function hideUserInfo() {

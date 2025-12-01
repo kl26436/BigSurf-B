@@ -3,6 +3,7 @@
 
 import { AppState } from './app-state.js';
 import { showNotification } from './ui-helpers.js';
+import { setBottomNavVisible, updateBottomNavActive } from './navigation.js';
 
 // ===================================================================
 // TEMPLATE SELECTION STATE
@@ -91,6 +92,10 @@ export function showWorkoutSelector() {
 
     // Show workout selector
     if (workoutSelector) workoutSelector.classList.remove('hidden');
+
+    // Show bottom nav and set workout tab active
+    setBottomNavVisible(true);
+    updateBottomNavActive('workout');
 }
 
 // ===================================================================

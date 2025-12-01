@@ -35,10 +35,11 @@ export function navigateTo(view) {
         'workout-selector',
         'active-workout',
         'workout-history-section',
-        'workout-management',
+        'workout-management-section',
         'dashboard',
         'stats-section',
-        'exercise-manager-section'
+        'exercise-manager-section',
+        'location-management-section'
     ];
 
     sections.forEach(sectionId => {
@@ -69,7 +70,7 @@ export function navigateTo(view) {
             break;
 
         case 'location':
-            showLocationSelector();
+            showLocationManagement();
             break;
 
         case 'exercises':
@@ -128,10 +129,10 @@ function showHistory() {
     }
 }
 
-function showLocationSelector() {
-    const { showLocationSelector: showLocation } = window;
-    if (showLocation) {
-        showLocation();
+function showLocationManagement() {
+    const { showLocationManagement: showManagement } = window;
+    if (showManagement) {
+        showManagement();
     }
 }
 
@@ -147,4 +148,84 @@ function showWorkoutManagement() {
     if (showManagement) {
         showManagement();
     }
+}
+
+// ===================================================================
+// BOTTOM NAVIGATION
+// ===================================================================
+
+// Navigate via bottom nav with tab state management
+export function bottomNavTo(tab) {
+    // Close more menu if open
+    closeMoreMenu();
+
+    // Update active tab
+    updateBottomNavActive(tab);
+
+    // Navigate to appropriate view
+    switch (tab) {
+        case 'dashboard':
+            navigateTo('dashboard');
+            break;
+        case 'history':
+            navigateTo('history');
+            break;
+        case 'workout':
+            // Check if there's an active workout
+            const { AppState } = window;
+            if (AppState && AppState.currentWorkout) {
+                navigateTo('active-workout');
+            } else {
+                navigateTo('start-workout');
+            }
+            break;
+        case 'more':
+            toggleMoreMenu();
+            break;
+    }
+}
+
+// Update bottom nav active state
+export function updateBottomNavActive(tab) {
+    const bottomNav = document.getElementById('bottom-nav');
+    if (!bottomNav) return;
+
+    bottomNav.querySelectorAll('.bottom-nav-item').forEach(item => {
+        if (item.dataset.tab === tab) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+}
+
+// Toggle more menu visibility
+export function toggleMoreMenu() {
+    const menu = document.getElementById('more-menu');
+    const overlay = document.getElementById('more-menu-overlay');
+
+    if (menu && overlay) {
+        const isHidden = menu.classList.contains('hidden');
+        menu.classList.toggle('hidden', !isHidden);
+        overlay.classList.toggle('hidden', !isHidden);
+    }
+}
+
+// Close more menu
+export function closeMoreMenu() {
+    const menu = document.getElementById('more-menu');
+    const overlay = document.getElementById('more-menu-overlay');
+
+    if (menu) menu.classList.add('hidden');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+// Show/hide bottom nav based on current page
+export function setBottomNavVisible(visible) {
+    const bottomNav = document.getElementById('bottom-nav');
+    if (bottomNav) {
+        bottomNav.classList.toggle('hidden', !visible);
+    }
+    // Also toggle body class for hamburger visibility
+    document.body.classList.toggle('no-bottom-nav', !visible);
 }

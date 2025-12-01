@@ -98,7 +98,7 @@
                 <li>
                     <a href="#" onclick="navigateTo('location'); return false;">
                         <i class="fas fa-map-marker-alt"></i>
-                        <span>Change Location</span>
+                        <span>Manage Locations</span>
                     </a>
                 </li>
                 <li>
@@ -167,32 +167,31 @@
 
         <!-- Main Content Area -->
         <main id="main-content">
-            
-            <!-- Resume Workout Card (hidden by default) -->
-            <div id="resume-workout-banner" class="resume-workout-card hidden">
-                <div class="resume-card-header">
-                    <i class="fas fa-play-circle"></i>
-                    <h3>Continue Your Workout?</h3>
-                </div>
-                <div class="resume-card-info">
-                    <span id="resume-workout-name" class="resume-workout-name">Custom: Thursday - Upper Body Pull</span>
-                    <div class="resume-workout-meta">
-                        <span><i class="fas fa-dumbbell"></i> <span id="resume-sets-completed">0/0</span> sets completed</span>
-                        <span><i class="fas fa-clock"></i> Started <span id="resume-time-ago">just now</span></span>
-                    </div>
-                </div>
-                <div class="resume-card-actions">
-                    <button class="btn btn-primary" onclick="continueInProgressWorkout()">
-                        <i class="fas fa-play"></i> Continue Workout
-                    </button>
-                    <button class="btn btn-secondary" onclick="discardInProgressWorkout()">
-                        <i class="fas fa-times"></i> Cancel Workout
-                    </button>
-                </div>
-            </div>
 
             <!-- Dashboard -->
             <section id="dashboard" class="content-section hidden">
+                <!-- Resume Workout Card (only shown on dashboard) -->
+                <div id="resume-workout-banner" class="resume-workout-card hidden">
+                    <div class="resume-card-header">
+                        <i class="fas fa-play-circle"></i>
+                        <h3>Continue Your Workout?</h3>
+                    </div>
+                    <div class="resume-card-info">
+                        <span id="resume-workout-name" class="resume-workout-name">Custom: Thursday - Upper Body Pull</span>
+                        <div class="resume-workout-meta">
+                            <span><i class="fas fa-dumbbell"></i> <span id="resume-sets-completed">0/0</span> sets completed</span>
+                            <span><i class="fas fa-clock"></i> Started <span id="resume-time-ago">just now</span></span>
+                        </div>
+                    </div>
+                    <div class="resume-card-actions">
+                        <button class="btn btn-primary" onclick="continueInProgressWorkout()">
+                            <i class="fas fa-play"></i> Continue Workout
+                        </button>
+                        <button class="btn btn-secondary" onclick="discardInProgressWorkout()">
+                            <i class="fas fa-times"></i> Cancel Workout
+                        </button>
+                    </div>
+                </div>
                 <div id="dashboard-content">
                     <!-- Dashboard content will be dynamically loaded -->
                 </div>
@@ -202,6 +201,61 @@
             <section id="stats-section" class="content-section hidden">
                 <div id="stats-content">
                     <!-- Stats content will be dynamically loaded -->
+                </div>
+            </section>
+
+            <!-- Location Management -->
+            <section id="location-management-section" class="content-section hidden">
+                <div class="edit-exercise-header">
+                    <button class="btn-back" onclick="closeLocationManagement()">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2>Manage Locations</h2>
+                    <div style="width: 80px;"></div>
+                </div>
+
+                <div class="location-management-content">
+                    <!-- Current Location -->
+                    <div class="current-location-card">
+                        <div class="current-location-label">Current Location</div>
+                        <div class="current-location-display">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span id="current-location-name">Not Set</span>
+                        </div>
+                    </div>
+
+                    <!-- Map View -->
+                    <div class="location-map-container" id="location-map-container">
+                        <div class="location-map-placeholder">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <p>Location map</p>
+                            <p class="map-hint">GPS coordinates required to display map</p>
+                        </div>
+                    </div>
+
+                    <!-- Saved Locations List -->
+                    <div class="location-list-header">
+                        <h3><i class="fas fa-list"></i> Saved Locations</h3>
+                        <span id="location-count" class="location-count">0 locations</span>
+                    </div>
+                    <div id="location-management-list" class="location-management-list">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Add New Location -->
+                    <div class="add-location-form">
+                        <h4><i class="fas fa-plus-circle"></i> Add New Location</h4>
+                        <div class="add-location-inputs">
+                            <input type="text" id="new-location-name-input" class="input-field"
+                                   placeholder="Location name (e.g., LA Fitness Downtown)">
+                            <button type="button" class="btn btn-primary" onclick="addNewLocationFromManagement()">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-full" onclick="detectAndAddLocation()">
+                            <i class="fas fa-crosshairs"></i> Use Current GPS Location
+                        </button>
+                    </div>
                 </div>
             </section>
 
@@ -678,18 +732,15 @@
 <section id="exercise-manager-section" class="content-section hidden">
     <!-- View 1: Category Grid (Entry Page) -->
     <div id="exercise-category-view" class="exercise-library-view">
-        <!-- Header with search and add button -->
+        <!-- Header with search only -->
         <div class="exercise-library-header">
             <div class="exercise-search-row">
-                <div class="exercise-search-wrapper">
+                <div class="exercise-search-wrapper full-width">
                     <i class="fas fa-search"></i>
                     <input type="text" id="exercise-search-input" class="exercise-search-input"
                            placeholder="Search exercises"
                            oninput="handleExerciseSearch()">
                 </div>
-                <button class="btn-add-exercise" onclick="showAddExerciseModal()">
-                    <i class="fas fa-plus"></i> Add
-                </button>
             </div>
         </div>
 
@@ -736,24 +787,16 @@
 
     <!-- View 2: Exercise List (After selecting category) -->
     <div id="exercise-list-view" class="exercise-library-view hidden">
-        <!-- Header with back, title, search, add -->
+        <!-- Header with back and title -->
         <div class="exercise-list-header">
             <button class="btn-back-category" onclick="showCategoryView()">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h2 id="exercise-list-title" class="exercise-list-title">Exercises</h2>
-            <div class="exercise-list-actions">
-                <button class="btn-icon-header" onclick="toggleExerciseListSearch()">
-                    <i class="fas fa-search"></i>
-                </button>
-                <button class="btn-add-exercise-small" onclick="showAddExerciseModal()">
-                    <i class="fas fa-plus"></i>
-                </button>
-            </div>
         </div>
 
-        <!-- Search bar (hidden by default, toggled) -->
-        <div id="exercise-list-search" class="exercise-list-search hidden">
+        <!-- Search bar (always visible) -->
+        <div id="exercise-list-search" class="exercise-list-search">
             <input type="text" id="exercise-list-search-input" class="exercise-search-input"
                    placeholder="Search exercises..."
                    oninput="filterExerciseLibrary()">
@@ -772,6 +815,13 @@
         <!-- Exercise List -->
         <div id="exercise-manager-grid" class="exercise-list-container">
             <!-- Exercises will be loaded here -->
+        </div>
+
+        <!-- Add Exercise Button (bottom) -->
+        <div class="exercise-list-footer">
+            <button class="btn-add-exercise-bottom" onclick="showAddExerciseModal()">
+                <i class="fas fa-plus"></i> Add New Exercise
+            </button>
         </div>
     </div>
 </section>
@@ -889,7 +939,10 @@
                         </div>
                         <div class="input-with-icon">
                             <i class="fas fa-map-marker-alt"></i>
-                            <input type="text" id="edit-equipment-location" class="edit-input-full" placeholder="Location/Gym (e.g., LA Fitness Downtown)">
+                            <input type="text" id="edit-equipment-location" class="edit-input-full"
+                                   placeholder="Location/Gym (e.g., LA Fitness Downtown)"
+                                   list="edit-equipment-location-list">
+                            <datalist id="edit-equipment-location-list"></datalist>
                         </div>
                         <div class="input-with-icon">
                             <i class="fas fa-video"></i>
@@ -1195,6 +1248,58 @@
         </div>
     </div>
 </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav id="bottom-nav" class="bottom-nav">
+        <button class="bottom-nav-item active" data-tab="dashboard" onclick="bottomNavTo('dashboard')">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </button>
+        <button class="bottom-nav-item" data-tab="workout" onclick="bottomNavTo('workout')">
+            <i class="fas fa-dumbbell"></i>
+            <span>Workout</span>
+        </button>
+        <button class="bottom-nav-item" data-tab="history" onclick="bottomNavTo('history')">
+            <i class="fas fa-history"></i>
+            <span>History</span>
+        </button>
+        <button class="bottom-nav-item" data-tab="more" onclick="toggleMoreMenu()">
+            <i class="fas fa-ellipsis-h"></i>
+            <span>More</span>
+        </button>
+    </nav>
+
+    <!-- More Menu Dropdown -->
+    <div id="more-menu" class="more-menu hidden">
+        <div class="more-menu-content">
+            <button class="more-menu-item" onclick="navigateTo('exercises'); closeMoreMenu();">
+                <i class="fas fa-list"></i>
+                <span>Exercise Library</span>
+            </button>
+            <button class="more-menu-item" onclick="navigateTo('templates'); closeMoreMenu();">
+                <i class="fas fa-dumbbell"></i>
+                <span>Workout Library</span>
+            </button>
+            <button class="more-menu-item" onclick="navigateTo('stats'); closeMoreMenu();">
+                <i class="fas fa-chart-line"></i>
+                <span>Stats & Records</span>
+            </button>
+            <button class="more-menu-item" onclick="navigateTo('location'); closeMoreMenu();">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Manage Locations</span>
+            </button>
+            <div class="more-menu-divider"></div>
+            <div class="more-menu-user">
+                <i class="fas fa-user"></i>
+                <span id="more-menu-email"></span>
+            </div>
+            <button class="more-menu-item more-menu-signout" onclick="signOutUser(); closeMoreMenu();">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sign Out</span>
+            </button>
+        </div>
+    </div>
+    <div id="more-menu-overlay" class="more-menu-overlay hidden" onclick="closeMoreMenu()"></div>
 
     <!-- Application Entry Point -->
     <script type="module" src="js/main.js"></script>

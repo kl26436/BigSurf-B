@@ -3,6 +3,7 @@
 
 import { AppState } from './app-state.js';
 import { showNotification, convertWeight, updateProgress, setHeaderMode } from './ui-helpers.js';
+import { setBottomNavVisible } from './navigation.js';
 import { saveWorkoutData, loadExerciseHistory } from './data-manager.js';
 import { scheduleRestNotification, cancelRestNotification, isFCMAvailable } from './push-notification-manager.js';
 import {
@@ -120,6 +121,9 @@ export async function startWorkout(workoutType) {
 
     // Hide header, show standalone hamburger for active workout
     setHeaderMode(false);
+
+    // Hide bottom nav during active workout
+    setBottomNavVisible(false);
 
     // Hide resume banner when starting a workout
     const resumeBanner = document.getElementById('resume-workout-banner');
@@ -246,7 +250,7 @@ export function continueInProgressWorkout() {
     }
 
     // Hide all other sections and show active workout
-    const sections = ['workout-selector', 'dashboard', 'workout-history-section', 'stats-section'];
+    const sections = ['workout-selector', 'dashboard', 'workout-history-section', 'stats-section', 'workout-management-section', 'exercise-manager-section', 'location-management-section'];
     sections.forEach(sectionId => {
         const section = document.getElementById(sectionId);
         if (section) section.classList.add('hidden');
@@ -442,9 +446,6 @@ export function createExerciseCard(exercise, index) {
             <span class="progress-text">${completedSets}/${displayTotal}</span>
         </div>
         <div class="exercise-actions-row">
-            <button class="btn-text" onclick="event.stopPropagation(); editExerciseDefaults('${exercise.machine}')">
-                <i class="fas fa-pencil-alt"></i> Edit
-            </button>
             <button class="btn-text btn-text-danger" onclick="event.stopPropagation(); deleteExerciseFromWorkout(${index})">
                 <i class="fas fa-trash-alt"></i> Delete
             </button>
@@ -468,12 +469,12 @@ export function focusExercise(index) {
         return;
     }
 
-    // Build title with equipment info as subtitle + change link
+    // Build title with icons for edit/change
     const equipmentText = exercise.equipment
         ? `${exercise.equipment}${exercise.equipmentLocation ? ' @ ' + exercise.equipmentLocation : ''}`
         : null;
 
-    title.innerHTML = `${exercise.machine}<br><span class="modal-equipment-subtitle">${equipmentText || 'No equipment'} <a href="#" class="equipment-change-link" onclick="event.preventDefault(); changeExerciseEquipment(${index})">change</a></span>`;
+    title.innerHTML = `${exercise.machine} <a href="#" class="exercise-edit-icon" onclick="event.preventDefault(); editExerciseDefaults('${exercise.machine.replace(/'/g, "\\'")}')"><i class="fas fa-pen"></i></a><br><span class="modal-equipment-subtitle">${equipmentText || 'No equipment'} <a href="#" class="equipment-change-icon" onclick="event.preventDefault(); changeExerciseEquipment(${index})"><i class="fas fa-sync-alt"></i></a></span>`;
     
     // Define currentUnit FIRST
     const currentUnit = AppState.exerciseUnits[index] || AppState.globalUnit;
@@ -1070,7 +1071,9 @@ export async function changeExerciseEquipment(exerciseIndex) {
 
     if (titleEl) titleEl.textContent = `for "${exerciseName}"`;
     if (newNameInput) newNameInput.value = exercise.equipment || '';
-    if (newLocationInput) newLocationInput.value = exercise.equipmentLocation || '';
+    // Pre-fill location with exercise location, or fall back to current session location
+    const sessionLocation = getSessionLocation();
+    if (newLocationInput) newLocationInput.value = exercise.equipmentLocation || sessionLocation || '';
 
     // Load equipment that has been used with this exercise
     try {
@@ -1740,9 +1743,8 @@ export async function showWorkoutSelector() {
     if (activeWorkout) activeWorkout.classList.add('hidden');
     if (workoutManagement) workoutManagement.classList.add('hidden');
     if (historySection) historySection.classList.add('hidden');
-    
-    // *** Check for in-progress workout whenever showing selector ***
-    await checkForInProgressWorkout();
+
+    // In-progress workout check removed - dashboard banner handles this now
 }
 
 async function checkForInProgressWorkout() {

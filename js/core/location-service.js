@@ -5,7 +5,8 @@ import { AppState } from './app-state.js';
 import { showNotification } from './ui-helpers.js';
 
 // Default radius in meters for location matching
-const DEFAULT_LOCATION_RADIUS = 150;
+// 200m accounts for GPS inaccuracy indoors and parking lot distance
+const DEFAULT_LOCATION_RADIUS = 200;
 
 // Current session location state
 let currentLocation = null;

@@ -2,6 +2,8 @@
 import { AppState } from '../app-state.js';
 import { FirebaseWorkoutManager } from '../firebase-workout-manager.js';
 import { showNotification, setHeaderMode } from '../ui-helpers.js';
+import { getSessionLocation } from '../location-service.js';
+import { setBottomNavVisible } from '../navigation.js';
 
 let workoutManager;
 let currentEditingTemplate = null;
@@ -32,7 +34,7 @@ export async function showWorkoutManagement() {
     }
 
     // Hide all other sections
-    const sections = ['dashboard', 'workout-selector', 'active-workout', 'workout-history-section', 'stats-section', 'exercise-manager-section'];
+    const sections = ['dashboard', 'workout-selector', 'active-workout', 'workout-history-section', 'stats-section', 'exercise-manager-section', 'location-management-section'];
     sections.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
@@ -43,6 +45,9 @@ export async function showWorkoutManagement() {
 
     // Hide header, show standalone hamburger for workout library
     setHeaderMode(false);
+
+    // Hide bottom nav on workout library
+    setBottomNavVisible(false);
 
     // Load all templates (unified list)
     setTimeout(() => {
@@ -871,7 +876,9 @@ async function showEquipmentPicker(exercise, isActiveWorkout) {
 
     if (titleEl) titleEl.textContent = `for "${exerciseName}"`;
     if (newNameInput) newNameInput.value = exercise.equipment || '';
-    if (newLocationInput) newLocationInput.value = exercise.equipmentLocation || '';
+    // Pre-fill location with exercise location, or fall back to current session location
+    const sessionLocation = isActiveWorkout ? getSessionLocation() : null;
+    if (newLocationInput) newLocationInput.value = exercise.equipmentLocation || sessionLocation || '';
 
     // Load equipment that has been used with this exercise
     try {
@@ -1317,9 +1324,8 @@ async function navigateToWorkoutSelector(fromNavigation, appState) {
     if (!fromNavigation) {
         appState.currentWorkout = null;
     }
-    
-    // Show in-progress workout prompt if returning with active workout
-    await checkForInProgressWorkout(appState);
+
+    // In-progress workout check removed - dashboard banner handles this now
 }
 
 async function checkForInProgressWorkout(appState) {

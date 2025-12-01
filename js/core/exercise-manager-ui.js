@@ -4,6 +4,7 @@
 import { AppState } from './app-state.js';
 import { showNotification, setHeaderMode } from './ui-helpers.js';
 import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
+import { setBottomNavVisible } from './navigation.js';
 
 let allExercises = [];
 let filteredExercises = [];
@@ -43,7 +44,7 @@ export function openExerciseManager() {
     const section = document.getElementById('exercise-manager-section');
     if (section) {
         // Hide all other sections
-        const sections = ['dashboard', 'workout-selector', 'active-workout', 'workout-history-section', 'stats-section', 'workout-management-section'];
+        const sections = ['dashboard', 'workout-selector', 'active-workout', 'workout-history-section', 'stats-section', 'workout-management-section', 'location-management-section'];
         sections.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.classList.add('hidden');
@@ -53,6 +54,9 @@ export function openExerciseManager() {
 
         // Hide header, show standalone hamburger for exercise manager
         setHeaderMode(false);
+
+        // Hide bottom nav on exercise library
+        setBottomNavVisible(false);
 
         // Show category view by default
         showCategoryView();
@@ -136,6 +140,15 @@ export function handleExerciseSearch() {
 
         if (categoryView) categoryView.classList.add('hidden');
         if (listView) listView.classList.remove('hidden');
+
+        // Show the list view search bar and copy search term
+        const listSearchDiv = document.getElementById('exercise-list-search');
+        const listSearchInput = document.getElementById('exercise-list-search-input');
+        if (listSearchDiv) listSearchDiv.classList.remove('hidden');
+        if (listSearchInput) {
+            listSearchInput.value = searchTerm;
+            listSearchInput.focus();
+        }
 
         filterAndRenderExercises(searchTerm);
     }
@@ -343,24 +356,17 @@ export function toggleExerciseGroup(groupId) {
     }
 }
 
-// Filter exercises
+// Filter exercises - used by both category view search and list view search
 export function filterExerciseLibrary() {
-    const searchTerm = document.getElementById('exercise-search-input')?.value.toLowerCase() || '';
-    const bodyPartFilter = document.getElementById('exercise-body-part-filter')?.value || '';
-    const equipmentFilter = document.getElementById('exercise-equipment-filter')?.value || '';
+    // Check list view search input first (used when in list view)
+    const listSearchInput = document.getElementById('exercise-list-search-input');
+    // Then check category view search input (used when in category view)
+    const categorySearchInput = document.getElementById('exercise-search-input');
 
-    filteredExercises = allExercises.filter(exercise => {
-        const matchesSearch = !searchTerm ||
-            exercise.name.toLowerCase().includes(searchTerm) ||
-            exercise.bodyPart.toLowerCase().includes(searchTerm) ||
-            exercise.equipmentType.toLowerCase().includes(searchTerm);
-        const matchesBodyPart = !bodyPartFilter || exercise.bodyPart === bodyPartFilter;
-        const matchesEquipment = !equipmentFilter || exercise.equipmentType === equipmentFilter;
+    // Use list view search if it has a value, otherwise use category search
+    const searchTerm = (listSearchInput?.value || categorySearchInput?.value || '').toLowerCase();
 
-        return matchesSearch && matchesBodyPart && matchesEquipment;
-    });
-
-    renderExercises();
+    filterAndRenderExercises(searchTerm);
 }
 
 // Clear filters
@@ -524,6 +530,42 @@ function clearEditForm() {
     document.getElementById('edit-equipment-video').value = '';
 }
 
+// Populate location datalist with all saved gym locations
+async function populateLocationDatalist() {
+    const datalist = document.getElementById('edit-equipment-location-list');
+    if (!datalist) return;
+
+    try {
+        // Get all user locations from Firebase
+        const locations = await workoutManager.getUserLocations();
+
+        // Also get locations from all equipment
+        const allEquipment = await workoutManager.getUserEquipment();
+        const equipmentLocations = new Set();
+        allEquipment.forEach(eq => {
+            if (eq.location) equipmentLocations.add(eq.location);
+            if (eq.locations && Array.isArray(eq.locations)) {
+                eq.locations.forEach(loc => equipmentLocations.add(loc));
+            }
+        });
+
+        // Combine gym locations and equipment locations
+        const allLocations = new Set([
+            ...locations.map(loc => loc.name),
+            ...equipmentLocations
+        ]);
+
+        // Populate datalist
+        datalist.innerHTML = Array.from(allLocations)
+            .sort()
+            .map(name => `<option value="${name}">`)
+            .join('');
+    } catch (error) {
+        console.error('❌ Error loading locations for datalist:', error);
+        datalist.innerHTML = '';
+    }
+}
+
 // Populate equipment list for the full-screen edit section
 // Only shows equipment that has been used with this specific exercise
 async function populateEquipmentListForSection(exerciseName = null, preselectedEquipment = null, preselectedLocation = null) {
@@ -541,6 +583,9 @@ async function populateEquipmentListForSection(exerciseName = null, preselectedE
     if (selectedDisplay) selectedDisplay.classList.add('hidden');
 
     try {
+        // Populate location datalist with all saved gym locations
+        await populateLocationDatalist();
+
         // Only get equipment associated with THIS exercise
         let exerciseEquipment = [];
         if (exerciseName) {

@@ -3,6 +3,7 @@
 
 import { AppState } from './app-state.js';
 import { showNotification, setHeaderMode } from './ui-helpers.js';
+import { setBottomNavVisible, updateBottomNavActive } from './navigation.js';
 
 // ===================================================================
 // MAIN HISTORY DISPLAY FUNCTION
@@ -27,6 +28,10 @@ export async function showWorkoutHistory() {
 
     // Show full header with logo on history page
     setHeaderMode(true);
+
+    // Show bottom nav and set active tab
+    setBottomNavVisible(true);
+    updateBottomNavActive('history');
 
     // Initialize calendar view
     await initializeCalendarView();

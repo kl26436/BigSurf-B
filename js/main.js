@@ -91,7 +91,10 @@ import {
 import {
     showLocationSelector, closeLocationSelector,
     selectSavedLocation, selectNewLocation, skipLocationSelection,
-    changeLocation
+    changeLocation,
+    showLocationManagement, closeLocationManagement,
+    setLocationAsCurrent, addNewLocationFromManagement, detectAndAddLocation,
+    editLocationName, deleteLocation
 } from './core/location-ui.js';
 
 // Location service (GPS-based location detection)
@@ -99,7 +102,8 @@ import { getSessionLocation } from './core/location-service.js';
 
 // Navigation functionality
 import {
-    openSidebar, closeSidebar, navigateTo
+    openSidebar, closeSidebar, navigateTo,
+    bottomNavTo, toggleMoreMenu, closeMoreMenu, setBottomNavVisible, updateBottomNavActive
 } from './core/navigation.js';
 
 // Dashboard functionality
@@ -303,10 +307,24 @@ window.selectNewLocation = selectNewLocation;
 window.skipLocationSelection = skipLocationSelection;
 window.changeLocation = changeLocation;
 
+// Location Management Functions
+window.showLocationManagement = showLocationManagement;
+window.closeLocationManagement = closeLocationManagement;
+window.setLocationAsCurrent = setLocationAsCurrent;
+window.addNewLocationFromManagement = addNewLocationFromManagement;
+window.detectAndAddLocation = detectAndAddLocation;
+window.editLocationName = editLocationName;
+window.deleteLocation = deleteLocation;
+
 // Navigation Functions
 window.openSidebar = openSidebar;
 window.closeSidebar = closeSidebar;
 window.navigateTo = navigateTo;
+window.bottomNavTo = bottomNavTo;
+window.toggleMoreMenu = toggleMoreMenu;
+window.closeMoreMenu = closeMoreMenu;
+window.setBottomNavVisible = setBottomNavVisible;
+window.updateBottomNavActive = updateBottomNavActive;
 
 // Dashboard Functions
 window.showDashboard = showDashboard;

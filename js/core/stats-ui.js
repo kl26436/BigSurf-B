@@ -3,6 +3,7 @@
 
 import { PRTracker } from './pr-tracker.js';
 import { StreakTracker } from './streak-tracker.js';
+import { setBottomNavVisible } from './navigation.js';
 
 // ===================================================================
 // STATE
@@ -31,6 +32,9 @@ export async function showStats() {
     }
 
     statsSection.classList.remove('hidden');
+
+    // Hide bottom nav on stats (accessed from More menu)
+    setBottomNavVisible(false);
 
     // Render stats view
     await renderStatsView();
