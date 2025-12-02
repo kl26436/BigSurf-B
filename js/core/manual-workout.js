@@ -130,7 +130,7 @@ async function loadLocationsForManual() {
     try {
         const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
-        const locations = await workoutManager.getLocations();
+        const locations = await workoutManager.getUserLocations();
 
         // Clear existing options except first placeholder
         locationSelect.innerHTML = '<option value="">Select gym location...</option>';
@@ -606,7 +606,7 @@ export async function openEquipmentPickerForManual(exerciseIndex) {
     try {
         const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
-        const equipmentList = await workoutManager.getEquipment();
+        const equipmentList = await workoutManager.getUserEquipment();
 
         const listContainer = document.getElementById('equipment-picker-list');
         if (listContainer) {
