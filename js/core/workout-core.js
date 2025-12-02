@@ -188,17 +188,33 @@ export async function completeWorkout() {
     // Stop duration timer
     AppState.clearTimers();
 
+    const isEditingHistorical = window.editingHistoricalWorkout === true;
+
     // Update saved data with completion info
-    AppState.savedData.completedAt = new Date().toISOString();
-    AppState.savedData.totalDuration = Math.floor((new Date() - AppState.workoutStartTime) / 1000);
+    if (isEditingHistorical) {
+        // Editing historical workout - preserve original duration and completedAt
+        // Only update completedAt if it wasn't already set
+        if (!AppState.savedData.completedAt) {
+            AppState.savedData.completedAt = new Date().toISOString();
+        }
+        // Preserve original duration - use stored value or keep existing
+        if (window.editingWorkoutOriginalDuration) {
+            AppState.savedData.totalDuration = window.editingWorkoutOriginalDuration;
+        }
+    } else {
+        // New workout - calculate duration normally
+        AppState.savedData.completedAt = new Date().toISOString();
+        AppState.savedData.totalDuration = Math.floor((new Date() - AppState.workoutStartTime) / 1000);
+    }
 
     // Save final data
     await saveWorkoutData(AppState);
 
-    // Process workout for PRs
-    const { PRTracker } = await import('./pr-tracker.js');
-    await PRTracker.processWorkoutForPRs(AppState.savedData);
-
+    // Process workout for PRs - ONLY for new workouts, not edits (to avoid duplicate PRs)
+    if (!isEditingHistorical) {
+        const { PRTracker } = await import('./pr-tracker.js');
+        await PRTracker.processWorkoutForPRs(AppState.savedData);
+    }
 
     // Reset state BEFORE showing dashboard (critical order!)
     AppState.reset();
@@ -209,6 +225,7 @@ export async function completeWorkout() {
     // Clear editing flags if we were editing a historical workout
     window.editingHistoricalWorkout = false;
     window.editingWorkoutDate = null;
+    window.editingWorkoutOriginalDuration = null;
 
     // Show dashboard after completion
     const { showDashboard } = await import('./dashboard-ui.js');
@@ -237,6 +254,7 @@ export function cancelWorkout(skipConfirmation = false) {
     // Clear editing flags if we were editing a historical workout
     window.editingHistoricalWorkout = false;
     window.editingWorkoutDate = null;
+    window.editingWorkoutOriginalDuration = null;
 
     // Navigate to dashboard instead of legacy workout selector
     import('./navigation.js').then(({ navigateTo }) => {
@@ -399,12 +417,11 @@ export async function editHistoricalWorkout(dateStr) {
     // For historical edits, don't lock the location - allow changes
     // resetLocationState is not needed since we're editing, not starting fresh
 
-    // Use the original start time for proper duration display
-    if (workoutData.startedAt) {
-        AppState.workoutStartTime = new Date(workoutData.startedAt);
-    } else {
-        AppState.workoutStartTime = new Date();
-    }
+    // Store the original duration - DON'T recalculate when editing
+    window.editingWorkoutOriginalDuration = workoutData.totalDuration || null;
+
+    // DON'T set workoutStartTime - we'll use the stored duration instead
+    AppState.workoutStartTime = null;
 
     // Hide all sections and show active workout
     const sections = ['workout-selector', 'dashboard', 'workout-history-section', 'stats-section', 'workout-management-section', 'exercise-manager-section', 'location-management-section'];
@@ -426,8 +443,8 @@ export async function editHistoricalWorkout(dateStr) {
     setHeaderMode(false);
     setBottomNavVisible(false);
 
-    // Start timer (shows elapsed time from original start)
-    startWorkoutTimer();
+    // Display static duration (don't start a live timer when editing)
+    displayStaticDuration(workoutData.totalDuration);
 
     // Render exercises
     renderExercises();
@@ -1719,6 +1736,26 @@ export function startWorkoutTimer() {
 
     updateDuration();
     AppState.workoutDurationTimer = setInterval(updateDuration, 1000);
+}
+
+// Display a static duration (used when editing historical workouts - no live timer)
+export function displayStaticDuration(totalSeconds) {
+    const durationDisplay = document.getElementById('workout-duration');
+    if (!durationDisplay) return;
+
+    // Clear any existing timer
+    if (AppState.workoutDurationTimer) {
+        clearInterval(AppState.workoutDurationTimer);
+        AppState.workoutDurationTimer = null;
+    }
+
+    if (totalSeconds && totalSeconds > 0) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        durationDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+        durationDisplay.textContent = '--:--';
+    }
 }
 
 export function updateWorkoutDuration() {
