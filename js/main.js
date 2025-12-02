@@ -113,7 +113,8 @@ import {
 
 // Stats functionality
 import {
-    showStats, filterPRs, clearPRFilters
+    showStats, closeStats, toggleStatsSection, togglePRBodyPart,
+    filterPRs, clearPRFilters
 } from './core/stats-ui.js';
 
 // PR Migration (one-time utility)
@@ -333,6 +334,9 @@ window.startSuggestedWorkout = startSuggestedWorkout;
 
 // Stats Functions
 window.showStats = showStats;
+window.closeStats = closeStats;
+window.toggleStatsSection = toggleStatsSection;
+window.togglePRBodyPart = togglePRBodyPart;
 window.filterPRs = filterPRs;
 window.clearPRFilters = clearPRFilters;
 

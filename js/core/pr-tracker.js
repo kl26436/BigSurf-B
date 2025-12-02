@@ -5,6 +5,11 @@ import { AppState } from './app-state.js';
 import { db, doc, setDoc, getDoc } from './firebase-config.js';
 
 // ===================================================================
+// PR CUTOFF DATE - Only count PRs from this date onwards
+// ===================================================================
+const PR_CUTOFF_DATE = '2024-11-30';
+
+// ===================================================================
 // PR TRACKING STATE
 // ===================================================================
 
@@ -164,6 +169,15 @@ function getExerciseEquipment(exerciseName) {
 }
 
 /**
+ * Get exercise body part from exercise library
+ */
+function getExerciseBodyPart(exerciseName) {
+    // Look up exercise in exercise database
+    const exercise = AppState.exerciseDatabase?.find(ex => ex.name === exerciseName);
+    return exercise?.bodyPart || 'Other';
+}
+
+/**
  * Get PRs for a specific exercise and equipment
  */
 export function getExercisePRs(exerciseName, equipment = null) {
@@ -227,13 +241,18 @@ export function checkForNewPR(exerciseName, reps, weight, equipment = null) {
 /**
  * Record a new PR
  */
-export async function recordPR(exerciseName, reps, weight, equipment = null, location = null, date = null) {
+export async function recordPR(exerciseName, reps, weight, equipment = null, location = null, date = null, bodyPart = null) {
     if (!equipment) {
         equipment = getExerciseEquipment(exerciseName);
     }
 
     if (!location) {
         location = prData.currentLocation || 'Unknown Location';
+    }
+
+    // Get body part from exercise library if not provided
+    if (!bodyPart) {
+        bodyPart = getExerciseBodyPart(exerciseName);
     }
 
     const volume = calculateVolume(reps, weight);
@@ -243,9 +262,19 @@ export async function recordPR(exerciseName, reps, weight, equipment = null, loc
         date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     }
 
+    // Check cutoff date - only record PRs from cutoff date onwards
+    if (date < PR_CUTOFF_DATE) {
+        return; // Don't record PRs before cutoff
+    }
+
     // Initialize exercise PRs if needed
     if (!prData.exercisePRs[exerciseName]) {
-        prData.exercisePRs[exerciseName] = {};
+        prData.exercisePRs[exerciseName] = {
+            bodyPart: bodyPart
+        };
+    } else {
+        // Update body part if it changed
+        prData.exercisePRs[exerciseName].bodyPart = bodyPart;
     }
 
     if (!prData.exercisePRs[exerciseName][equipment]) {
@@ -279,6 +308,15 @@ export async function processWorkoutForPRs(workoutData) {
     if (!AppState.currentUser || !workoutData.exercises) {
         return;
     }
+
+    // Get the workout date
+    const workoutDate = workoutData.date || new Date().toISOString().split('T')[0];
+
+    // Check cutoff date - don't process workouts before cutoff
+    if (workoutDate < PR_CUTOFF_DATE) {
+        return;
+    }
+
     let newPRCount = 0;
 
     // Iterate through all exercises in the workout
@@ -288,10 +326,11 @@ export async function processWorkoutForPRs(workoutData) {
 
         if (!exerciseName || !exerciseData.sets) continue;
 
-        // Get equipment from original workout template
+        // Get equipment and body part from original workout template
         const exerciseIndex = exerciseKey.replace('exercise_', '');
         const originalExercise = workoutData.originalWorkout?.exercises?.[exerciseIndex];
         const equipment = originalExercise?.equipment || 'Unknown Equipment';
+        const bodyPart = originalExercise?.bodyPart || getExerciseBodyPart(exerciseName);
 
         // Check each set for PRs
         for (const set of exerciseData.sets) {
@@ -300,16 +339,11 @@ export async function processWorkoutForPRs(workoutData) {
             const prCheck = checkForNewPR(exerciseName, set.reps, set.weight, equipment);
 
             if (prCheck.isNewPR) {
-                await recordPR(exerciseName, set.reps, set.weight, equipment, prData.currentLocation);
+                await recordPR(exerciseName, set.reps, set.weight, equipment, prData.currentLocation, workoutDate, bodyPart);
                 newPRCount++;
             }
         }
     }
-
-    // Don't show notification here - user already got notified during workout
-    // if (newPRCount > 0) {
-    //     showNotification(`🏆 ${newPRCount} new PR${newPRCount > 1 ? 's' : ''} achieved!`, 'success');
-    // }
 }
 
 // ===================================================================
@@ -351,20 +385,126 @@ export function getAllPRs() {
     const prList = [];
 
     for (const exerciseName in prData.exercisePRs) {
-        const equipmentPRs = prData.exercisePRs[exerciseName];
+        const exerciseData = prData.exercisePRs[exerciseName];
+        const bodyPart = exerciseData.bodyPart || 'Other';
 
-        for (const equipment in equipmentPRs) {
-            const prs = equipmentPRs[equipment];
+        for (const equipment in exerciseData) {
+            // Skip the bodyPart property
+            if (equipment === 'bodyPart') continue;
+
+            const prs = exerciseData[equipment];
 
             prList.push({
                 exercise: exerciseName,
                 equipment: equipment,
+                bodyPart: bodyPart,
                 prs: prs
             });
         }
     }
 
     return prList;
+}
+
+/**
+ * Get PRs grouped by body part for the PR browser
+ * Returns: { bodyPart: { exerciseName: { equipment: PRs } } }
+ */
+export function getPRsByBodyPart() {
+    const grouped = {};
+
+    for (const exerciseName in prData.exercisePRs) {
+        const exerciseData = prData.exercisePRs[exerciseName];
+        const bodyPart = exerciseData.bodyPart || 'Other';
+
+        if (!grouped[bodyPart]) {
+            grouped[bodyPart] = {};
+        }
+
+        if (!grouped[bodyPart][exerciseName]) {
+            grouped[bodyPart][exerciseName] = {};
+        }
+
+        for (const equipment in exerciseData) {
+            // Skip the bodyPart property
+            if (equipment === 'bodyPart') continue;
+
+            grouped[bodyPart][exerciseName][equipment] = exerciseData[equipment];
+        }
+    }
+
+    return grouped;
+}
+
+/**
+ * Get recent PRs (most recent first, limited count)
+ * Only returns maxWeight PRs with 5+ reps for display
+ */
+export function getRecentPRs(count = 5) {
+    const prsWithDates = [];
+
+    for (const exerciseName in prData.exercisePRs) {
+        const exerciseData = prData.exercisePRs[exerciseName];
+        const bodyPart = exerciseData.bodyPart || 'Other';
+
+        for (const equipment in exerciseData) {
+            if (equipment === 'bodyPart') continue;
+
+            const prs = exerciseData[equipment];
+
+            // Only include max weight PRs with 5+ reps
+            if (prs.maxWeight && prs.maxWeight.reps >= 5) {
+                prsWithDates.push({
+                    exercise: exerciseName,
+                    equipment: equipment,
+                    bodyPart: bodyPart,
+                    type: 'maxWeight',
+                    weight: prs.maxWeight.weight,
+                    reps: prs.maxWeight.reps,
+                    date: prs.maxWeight.date,
+                    location: prs.maxWeight.location
+                });
+            }
+        }
+    }
+
+    // Sort by date descending
+    prsWithDates.sort((a, b) => b.date.localeCompare(a.date));
+
+    return prsWithDates.slice(0, count);
+}
+
+/**
+ * Get total PR count
+ */
+export function getTotalPRCount() {
+    let count = 0;
+
+    for (const exerciseName in prData.exercisePRs) {
+        const exerciseData = prData.exercisePRs[exerciseName];
+
+        for (const equipment in exerciseData) {
+            if (equipment === 'bodyPart') continue;
+            count++;
+        }
+    }
+
+    return count;
+}
+
+/**
+ * Clear all PRs (for fresh start)
+ */
+export async function clearAllPRs() {
+    prData.exercisePRs = {};
+    await savePRData();
+}
+
+/**
+ * Get the cutoff date
+ */
+export function getPRCutoffDate() {
+    return PR_CUTOFF_DATE;
 }
 
 // ===================================================================
@@ -383,5 +523,10 @@ export const PRTracker = {
     recordPR,
     processWorkoutForPRs,
     getPRDisplayText,
-    getAllPRs
+    getAllPRs,
+    getPRsByBodyPart,
+    getRecentPRs,
+    getTotalPRCount,
+    clearAllPRs,
+    getPRCutoffDate
 };

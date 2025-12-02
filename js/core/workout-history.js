@@ -475,6 +475,9 @@ export function getWorkoutHistory(appState) {
         const endTime = rawData.completedAt ? new Date(rawData.completedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : null;
         const totalDuration = rawData.totalDuration ? this.formatDuration(rawData.totalDuration) : workout.duration;
 
+        // Get location from rawData
+        const workoutLocation = rawData.location || null;
+
         return `
             <div style="margin-bottom: 1.5rem;">
                 <div style="display: grid; grid-template-columns: auto 1fr; gap: 0.75rem 1rem; align-items: center;">
@@ -483,6 +486,13 @@ export function getWorkoutHistory(appState) {
                         <i class="fas fa-${workout.status === 'completed' ? 'check-circle' : workout.status === 'cancelled' ? 'times-circle' : 'exclamation-circle'}"></i>
                         ${workout.status.charAt(0).toUpperCase() + workout.status.slice(1)}
                     </span>
+
+                    ${workoutLocation ? `
+                        <strong style="color: var(--text-secondary);">Location:</strong>
+                        <span style="color: var(--primary);">
+                            <i class="fas fa-map-marker-alt"></i> ${workoutLocation}
+                        </span>
+                    ` : ''}
 
                     ${startTime ? `
                         <strong style="color: var(--text-secondary);">Started:</strong>
