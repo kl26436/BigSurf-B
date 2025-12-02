@@ -52,11 +52,11 @@ export function openExerciseManager() {
 
         section.classList.remove('hidden');
 
-        // Hide header, show standalone hamburger for exercise manager
+        // Hide header but keep bottom nav for consistency
         setHeaderMode(false);
 
-        // Hide bottom nav on exercise library
-        setBottomNavVisible(false);
+        // Keep bottom nav visible for consistency
+        setBottomNavVisible(true);
 
         // Show category view by default
         showCategoryView();

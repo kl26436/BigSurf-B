@@ -40,7 +40,7 @@ export async function showStats() {
     }
 
     statsSection.classList.remove('hidden');
-    setBottomNavVisible(false);
+    setBottomNavVisible(true); // Keep bottom nav visible for consistency
     await renderStatsView();
 }
 

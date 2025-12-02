@@ -43,11 +43,11 @@ export async function showWorkoutManagement() {
     // Show workout management section
     section.classList.remove('hidden');
 
-    // Hide header, show standalone hamburger for workout library
+    // Hide header but keep bottom nav for consistency
     setHeaderMode(false);
 
-    // Hide bottom nav on workout library
-    setBottomNavVisible(false);
+    // Keep bottom nav visible for consistency
+    setBottomNavVisible(true);
 
     // Load all templates (unified list)
     setTimeout(() => {

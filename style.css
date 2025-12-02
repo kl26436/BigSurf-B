@@ -6808,11 +6808,23 @@ img[loading="lazy"].loaded {
 
 /* Hero Card with Progress Ring */
 .hero-card {
-    background: linear-gradient(135deg, rgba(64, 224, 208, 0.08) 0%, rgba(64, 224, 208, 0.02) 100%);
-    border: 1px solid rgba(64, 224, 208, 0.2);
-    border-radius: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
     padding: 1.5rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+}
+
+.hero-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border-top: 3px solid rgba(64, 224, 208, 0.85);
+    opacity: 0.75;
+    pointer-events: none;
 }
 
 .hero-content {
@@ -6909,12 +6921,13 @@ img[loading="lazy"].loaded {
 .dashboard-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 16px;
+    border-radius: 14px;
     padding: 1.25rem;
     margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
 }
 
 .card-icon {
@@ -6961,19 +6974,32 @@ img[loading="lazy"].loaded {
     overflow: hidden;
 }
 
+.streak-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border-top: 3px solid rgba(64, 224, 208, 0.85);
+    opacity: 0.75;
+    pointer-events: none;
+}
+
 .streak-icon-inactive {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-secondary);
 }
 
 .streak-icon {
-    background: linear-gradient(135deg, #ff6b35, #f7931e);
-    color: white;
+    background: rgba(0, 0, 0, 0.35);
+    color: #ff6b35;
 }
 
 .streak-active {
     border-color: rgba(255, 107, 53, 0.3);
-    background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, var(--bg-secondary) 100%);
+}
+
+.streak-active::before {
+    border-top-color: rgba(255, 107, 53, 0.85);
 }
 
 .streak-flame {
@@ -7012,8 +7038,8 @@ img[loading="lazy"].loaded {
 }
 
 .trophy-icon {
-    background: linear-gradient(135deg, #ffd700, #f7931e);
-    color: white;
+    background: rgba(0, 0, 0, 0.35);
+    color: #ffd700;
 }
 
 .prs-list {
@@ -7099,13 +7125,25 @@ img[loading="lazy"].loaded {
 .suggested-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: 14px;
     padding: 1rem;
     display: flex;
     align-items: center;
     gap: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+    position: relative;
+}
+
+.suggested-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border-top: 3px solid rgba(64, 224, 208, 0.85);
+    opacity: 0.75;
+    pointer-events: none;
 }
 
 .suggested-card:hover {
@@ -7116,8 +7154,8 @@ img[loading="lazy"].loaded {
 .suggested-icon {
     width: 44px;
     height: 44px;
-    border-radius: 10px;
-    background: rgba(64, 224, 208, 0.1);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.35);
     color: var(--primary);
     display: flex;
     align-items: center;
@@ -7157,9 +7195,13 @@ img[loading="lazy"].loaded {
 
 /* Suggested Completed State */
 .suggested-completed {
-    background: linear-gradient(135deg, rgba(74, 222, 128, 0.08) 0%, var(--bg-secondary) 100%);
+    background: var(--bg-secondary);
     border-color: rgba(74, 222, 128, 0.3);
     cursor: default;
+}
+
+.suggested-completed::before {
+    border-top-color: rgba(74, 222, 128, 0.85);
 }
 
 .suggested-completed:hover {
@@ -7170,8 +7212,8 @@ img[loading="lazy"].loaded {
 .suggested-completed-icon {
     width: 44px;
     height: 44px;
-    border-radius: 10px;
-    background: rgba(74, 222, 128, 0.15);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.35);
     color: #4ade80;
     display: flex;
     align-items: center;
