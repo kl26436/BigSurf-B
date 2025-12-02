@@ -1142,6 +1142,32 @@ function renderSuggestedWorkoutsNew(suggestedWorkouts, completedWorkoutTypes = [
     const today = new Date();
     const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
 
+    // Check if all suggested workouts are completed
+    const allCompleted = suggestedWorkouts.every(workout => {
+        const workoutName = workout.name || workout.day;
+        return completedWorkoutTypes.includes(workoutName);
+    });
+
+    // If all workouts are done, show a single congrats banner
+    if (allCompleted && suggestedWorkouts.length > 0) {
+        const completedCount = suggestedWorkouts.length;
+        return `
+            <div class="congrats-banner">
+                <div class="congrats-icon">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="congrats-content">
+                    <div class="congrats-title">${dayName} Complete!</div>
+                    <div class="congrats-message">
+                        ${completedCount === 1
+                            ? `You crushed your workout today!`
+                            : `You completed all ${completedCount} scheduled workouts!`}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     const workoutCards = suggestedWorkouts.map(workout => {
         const workoutName = workout.name || workout.day;
         const templateId = workout.id || workout.name;
@@ -1150,6 +1176,7 @@ function renderSuggestedWorkoutsNew(suggestedWorkouts, completedWorkoutTypes = [
         const exerciseCount = workout.exercises?.length || 0;
 
         if (isCompleted) {
+            // Completed workout - show small congrats card
             return `
                 <div class="suggested-card suggested-completed">
                     <div class="suggested-completed-icon">
@@ -1157,7 +1184,7 @@ function renderSuggestedWorkoutsNew(suggestedWorkouts, completedWorkoutTypes = [
                     </div>
                     <div class="suggested-info">
                         <div class="suggested-name">${workoutName}</div>
-                        <div class="suggested-status">Completed today</div>
+                        <div class="suggested-status">Done - Nice work!</div>
                     </div>
                 </div>
             `;

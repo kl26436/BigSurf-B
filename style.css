@@ -7266,6 +7266,47 @@ img[loading="lazy"].loaded {
     font-weight: 500;
 }
 
+/* Congrats Banner - shown when all daily workouts complete */
+.congrats-banner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.15), rgba(29, 211, 176, 0.1));
+    border: 1px solid rgba(74, 222, 128, 0.3);
+    border-radius: 16px;
+    margin-top: 0.5rem;
+}
+
+.congrats-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.25), rgba(29, 211, 176, 0.2));
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.congrats-content {
+    flex: 1;
+}
+
+.congrats-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4ade80;
+    margin-bottom: 0.25rem;
+}
+
+.congrats-message {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .stats-grid {
