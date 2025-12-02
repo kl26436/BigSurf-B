@@ -1902,23 +1902,15 @@ async function initializeWorkoutLocation() {
             setSessionLocation(result.location.name);
             // Update visit count
             await workoutManager.updateLocationVisit(result.location.id);
-            // Also sync with PRTracker for location management page
-            try {
-                const { PRTracker } = await import('./pr-tracker.js');
-                await PRTracker.setCurrentLocation(result.location.name);
-            } catch (e) { /* ignore PRTracker sync errors */ }
         } else if (result.isNew && result.coords) {
             // At a new location - prompt user to name it
             await promptForNewLocation(result.coords, workoutManager, savedLocations);
-        } else if (!result.coords) {
-            // No GPS available - try to use last known location from PRTracker
-            try {
-                const { PRTracker } = await import('./pr-tracker.js');
-                const lastLocation = PRTracker.suggestLocation();
-                if (lastLocation) {
-                    setSessionLocation(lastLocation);
-                }
-            } catch (e) { /* ignore */ }
+        } else if (!result.coords && savedLocations.length > 0) {
+            // No GPS available - use most recently visited location
+            const mostRecent = savedLocations[0]; // Already sorted by lastVisit desc
+            if (mostRecent) {
+                setSessionLocation(mostRecent.name);
+            }
         }
 
     } catch (error) {
@@ -1959,12 +1951,6 @@ function promptForNewLocation(coords, workoutManager, savedLocations) {
                         });
                         setSessionLocation(name);
                     }
-
-                    // Sync with PRTracker for location management page
-                    try {
-                        const { PRTracker } = await import('./pr-tracker.js');
-                        await PRTracker.setCurrentLocation(name);
-                    } catch (e) { /* ignore PRTracker sync errors */ }
 
                     showNotification(`Location set: ${name}`, 'success');
                 } catch (error) {

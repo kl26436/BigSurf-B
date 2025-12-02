@@ -1171,6 +1171,35 @@ async getGlobalDefaultTemplates() {
     }
 
     /**
+     * Update a gym location
+     */
+    async updateLocation(locationId, updates) {
+        if (!this.appState.currentUser) {
+            throw new Error('Must be signed in to update location');
+        }
+
+        try {
+            const docRef = doc(this.db, "users", this.appState.currentUser.uid, "locations", locationId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                await setDoc(docRef, {
+                    ...data,
+                    ...updates,
+                    updatedAt: new Date().toISOString()
+                });
+                return true;
+            }
+            return false;
+
+        } catch (error) {
+            console.error('Error updating location:', error);
+            throw error;
+        }
+    }
+
+    /**
      * Find location by name
      */
     async getLocationByName(name) {
