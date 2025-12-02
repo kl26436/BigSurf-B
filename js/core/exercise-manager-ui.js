@@ -1086,11 +1086,35 @@ export async function saveExerciseFromSection() {
 
         showNotification(isEditing ? 'Exercise updated!' : 'Exercise created!', 'success');
 
+        // Store old name before refresh to update active workout
+        const oldName = currentEditingExercise?.name || currentEditingExercise?.machine;
+        const newName = formData.name;
+
         // Close section and return to exercise manager
         closeEditExerciseSection();
 
         // Refresh AppState exercise database
         AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
+
+        // Update active workout if exercise was renamed and we're editing from active workout
+        if (isEditing && oldName && newName && oldName !== newName && AppState.currentWorkout) {
+            // Find and update the exercise in current workout
+            const exerciseIndex = AppState.currentWorkout.exercises.findIndex(
+                ex => (ex.machine || ex.name) === oldName
+            );
+            if (exerciseIndex !== -1) {
+                AppState.currentWorkout.exercises[exerciseIndex].machine = newName;
+                AppState.currentWorkout.exercises[exerciseIndex].name = newName;
+                // Also update video if provided
+                if (formData.video) {
+                    AppState.currentWorkout.exercises[exerciseIndex].video = formData.video;
+                }
+                // Dispatch event to refresh workout UI
+                window.dispatchEvent(new CustomEvent('exerciseRenamed', {
+                    detail: { oldName, newName, exerciseIndex }
+                }));
+            }
+        }
 
         // Refresh exercise manager section
         await loadExercises();

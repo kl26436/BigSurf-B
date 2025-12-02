@@ -18,7 +18,7 @@ import {
 // Workout core functionality
 import {
     startWorkout, pauseWorkout, completeWorkout, cancelWorkout, cancelCurrentWorkout,
-    continueInProgressWorkout, discardInProgressWorkout,
+    continueInProgressWorkout, discardInProgressWorkout, editHistoricalWorkout,
     renderExercises, createExerciseCard, focusExercise,
     updateSet, addSet, deleteSet, addSetToExercise, removeSetFromExercise,
     saveExerciseNotes, markExerciseComplete,
@@ -180,6 +180,7 @@ window.cancelWorkout = cancelWorkout;
 window.cancelCurrentWorkout = cancelCurrentWorkout;
 window.continueInProgressWorkout = continueInProgressWorkout;
 window.discardInProgressWorkout = discardInProgressWorkout;
+window.editHistoricalWorkout = editHistoricalWorkout;
 window.startWorkoutFromModal = function(workoutName) {
     // Close the modal
     const modal = document.getElementById('template-selection-modal');

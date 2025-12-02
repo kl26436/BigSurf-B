@@ -3665,22 +3665,22 @@ body {
 .exercise-table {
     width: 100%;
     border-collapse: separate;
-    border-spacing: 0 0.3rem;
-    margin-bottom: 0.25rem;
+    border-spacing: 0 0.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .exercise-table th {
     background: transparent;
-    padding: 0.35rem 0.5rem;
+    padding: 0.5rem;
     text-align: center;
     font-weight: 600;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-secondary);
     border-bottom: none;
 }
 
 .exercise-table td {
-    padding: 0.3rem 0.35rem;
+    padding: 0.4rem 0.25rem;
     border-bottom: none;
     text-align: center;
 }
@@ -3694,22 +3694,25 @@ body {
     font-weight: 600;
     color: var(--text-secondary);
     font-size: 1rem;
+    min-width: 50px;
 }
 
 .set-input {
-    width: 70px;
-    min-width: 60px;
-    max-width: 80px;
+    width: 80px;
+    min-width: 70px;
+    max-width: 90px;
     background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 0.45rem 0.4rem;
+    border-radius: 12px;
+    padding: 0.75rem 0.5rem;
     color: var(--text-primary);
     text-align: center;
-    font-size: 16px; /* Prevents zoom on iOS - MUST be 16px or larger */
-    font-weight: 500;
+    font-size: 18px; /* Larger for easier touch */
+    font-weight: 600;
     -webkit-appearance: none;
     appearance: none;
+    /* Ensure touch target is at least 44px */
+    min-height: 44px;
 }
 
 .set-input:focus {
@@ -5793,11 +5796,14 @@ img[loading="lazy"].loaded {
     }
 
     .exercise-table {
-        font-size: 0.875rem;
+        font-size: 1rem;
     }
 
     .set-input {
-        width: 60px;
+        width: 75px;
+        min-width: 65px;
+        font-size: 18px;
+        padding: 0.7rem 0.4rem;
     }
 
     .form-actions {

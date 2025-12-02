@@ -136,6 +136,30 @@ export async function loadTodaysWorkout(state) {
         return null;
     }
 }
+
+/**
+ * Load a workout by specific date (for editing historical workouts)
+ * @param {Object} state - AppState
+ * @param {string} dateStr - Date string in YYYY-MM-DD format
+ * @returns {Object|null} - Workout data or null if not found
+ */
+export async function loadWorkoutByDate(state, dateStr) {
+    if (!state.currentUser) return null;
+
+    try {
+        const docRef = doc(db, "users", state.currentUser.uid, "workouts", dateStr);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            return docSnap.data();
+        }
+        return null;
+    } catch (error) {
+        console.error('Error loading workout by date:', error);
+        return null;
+    }
+}
+
 import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
 
 export async function loadWorkoutPlans(state) {

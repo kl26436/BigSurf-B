@@ -12,6 +12,25 @@ import {
     showLocationPrompt, updateLocationIndicator, getCurrentCoords
 } from './location-service.js';
 
+// Global timer state to persist across modal re-renders
+let activeRestTimer = null;
+
+// Listen for exercise rename events to refresh active workout UI
+window.addEventListener('exerciseRenamed', (event) => {
+    // If we have an active workout, refresh the exercises display
+    if (AppState.currentWorkout) {
+        renderExercises();
+        // Close exercise modal if open and re-open with refreshed data
+        const modal = document.getElementById('exercise-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            const { exerciseIndex } = event.detail;
+            if (typeof exerciseIndex === 'number') {
+                focusExercise(exerciseIndex);
+            }
+        }
+    }
+});
+
 // ===================================================================
 // CORE WORKOUT LIFECYCLE
 // ===================================================================
@@ -187,6 +206,10 @@ export async function completeWorkout() {
     // Clear in-progress workout since it's now completed
     window.inProgressWorkout = null;
 
+    // Clear editing flags if we were editing a historical workout
+    window.editingHistoricalWorkout = false;
+    window.editingWorkoutDate = null;
+
     // Show dashboard after completion
     const { showDashboard } = await import('./dashboard-ui.js');
     showDashboard();
@@ -211,6 +234,9 @@ export function cancelWorkout(skipConfirmation = false) {
     // Clear in-progress workout since it's been cancelled
     window.inProgressWorkout = null;
 
+    // Clear editing flags if we were editing a historical workout
+    window.editingHistoricalWorkout = false;
+    window.editingWorkoutDate = null;
 
     // Navigate to dashboard instead of legacy workout selector
     import('./navigation.js').then(({ navigateTo }) => {
@@ -276,6 +302,142 @@ export function continueInProgressWorkout() {
     // It will be cleared when workout is completed or cancelled
     // window.inProgressWorkout = null;
 
+}
+
+// ===================================================================
+// EDIT HISTORICAL WORKOUT
+// ===================================================================
+
+/**
+ * Edit a historical workout - loads it into the active workout UI
+ * @param {string} dateStr - The date of the workout to edit (YYYY-MM-DD)
+ */
+export async function editHistoricalWorkout(dateStr) {
+    if (!AppState.currentUser) {
+        alert('Please sign in to edit workouts');
+        return;
+    }
+
+    // Load the workout data from Firebase
+    const { loadWorkoutByDate } = await import('./data-manager.js');
+    const workoutData = await loadWorkoutByDate(AppState, dateStr);
+
+    if (!workoutData) {
+        showNotification('Could not load workout data', 'error');
+        return;
+    }
+
+    // Close the workout detail modal if open
+    if (window.workoutHistory) {
+        window.workoutHistory.closeWorkoutDetailModal();
+    }
+
+    // Set flag to indicate we're editing a historical workout
+    window.editingHistoricalWorkout = true;
+    window.editingWorkoutDate = dateStr;
+
+    // Reconstruct the workout structure for the active workout UI
+    // Use originalWorkout if available, otherwise reconstruct from exercises
+    let workoutExercises = [];
+
+    if (workoutData.originalWorkout && workoutData.originalWorkout.exercises) {
+        // Use the saved template structure
+        workoutExercises = workoutData.originalWorkout.exercises.map((ex, index) => {
+            const key = `exercise_${index}`;
+            const savedExercise = workoutData.exercises?.[key] || {};
+            return {
+                machine: ex.machine || ex.name,
+                sets: ex.sets || 3,
+                reps: ex.reps || 10,
+                weight: ex.weight || 0,
+                video: ex.video || '',
+                equipment: savedExercise.equipment || ex.equipment || null,
+                equipmentLocation: savedExercise.equipmentLocation || ex.equipmentLocation || null
+            };
+        });
+    } else if (workoutData.exerciseNames) {
+        // Reconstruct from exerciseNames and exercises data
+        const exerciseKeys = Object.keys(workoutData.exerciseNames).sort();
+        workoutExercises = exerciseKeys.map(key => {
+            const name = workoutData.exerciseNames[key];
+            const savedExercise = workoutData.exercises?.[key] || {};
+            return {
+                machine: name,
+                sets: 3,
+                reps: 10,
+                weight: 0,
+                video: '',
+                equipment: savedExercise.equipment || null,
+                equipmentLocation: savedExercise.equipmentLocation || null
+            };
+        });
+    }
+
+    // Set up the current workout state
+    AppState.currentWorkout = {
+        day: workoutData.workoutType,
+        name: workoutData.workoutType,
+        exercises: workoutExercises
+    };
+
+    // Restore saved data (sets, reps, weights, notes)
+    AppState.savedData = {
+        ...workoutData,
+        date: dateStr // Ensure we save back to the same date
+    };
+
+    // Restore exercise units
+    AppState.exerciseUnits = workoutData.exerciseUnits || {};
+
+    // Set location from saved workout (or clear if none)
+    if (workoutData.location) {
+        setSessionLocation(workoutData.location);
+    } else {
+        setSessionLocation(null);
+    }
+
+    // For historical edits, don't lock the location - allow changes
+    // resetLocationState is not needed since we're editing, not starting fresh
+
+    // Use the original start time for proper duration display
+    if (workoutData.startedAt) {
+        AppState.workoutStartTime = new Date(workoutData.startedAt);
+    } else {
+        AppState.workoutStartTime = new Date();
+    }
+
+    // Hide all sections and show active workout
+    const sections = ['workout-selector', 'dashboard', 'workout-history-section', 'stats-section', 'workout-management-section', 'exercise-manager-section', 'location-management-section'];
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (section) section.classList.add('hidden');
+    });
+
+    const activeWorkout = document.getElementById('active-workout');
+    if (activeWorkout) activeWorkout.classList.remove('hidden');
+
+    // Set workout name in header with (Editing) indicator
+    const workoutNameElement = document.getElementById('current-workout-name');
+    if (workoutNameElement) {
+        workoutNameElement.textContent = `${workoutData.workoutType} (Editing)`;
+    }
+
+    // Hide header and nav for workout view
+    setHeaderMode(false);
+    setBottomNavVisible(false);
+
+    // Start timer (shows elapsed time from original start)
+    startWorkoutTimer();
+
+    // Render exercises
+    renderExercises();
+
+    // Update location indicator to show current location with change option
+    // Don't lock it so user can change it when editing
+    const currentLocation = getSessionLocation();
+    updateLocationIndicator(currentLocation, false);
+
+    showNotification('Editing workout - changes will save to original date', 'info');
 }
 
 export async function discardInProgressWorkout() {
@@ -813,6 +975,9 @@ export function deleteSet(exerciseIndex, setIndex) {
 export function addSetToExercise(exerciseIndex) {
     if (!AppState.currentWorkout) return;
 
+    // Save timer state before re-render
+    saveActiveTimerState(exerciseIndex);
+
     // Increment set count in current workout template
     AppState.currentWorkout.exercises[exerciseIndex].sets =
         (AppState.currentWorkout.exercises[exerciseIndex].sets || 3) + 1;
@@ -822,6 +987,9 @@ export function addSetToExercise(exerciseIndex) {
 
     // Refresh the exercise modal to show new set
     focusExercise(exerciseIndex);
+
+    // Restore timer after re-render
+    restoreActiveTimerState(exerciseIndex);
 }
 
 // Remove last set from exercise modal (refreshes modal instead of full exercise list)
@@ -834,6 +1002,9 @@ export function removeSetFromExercise(exerciseIndex) {
     if (currentSets <= 1) {
         return;
     }
+
+    // Save timer state before re-render
+    saveActiveTimerState(exerciseIndex);
 
     // Decrement set count
     AppState.currentWorkout.exercises[exerciseIndex].sets = currentSets - 1;
@@ -853,6 +1024,9 @@ export function removeSetFromExercise(exerciseIndex) {
 
     // Refresh the exercise modal to show updated sets
     focusExercise(exerciseIndex);
+
+    // Restore timer after re-render
+    restoreActiveTimerState(exerciseIndex);
 }
 
 export function saveExerciseNotes(exerciseIndex) {
@@ -1483,6 +1657,45 @@ function stopModalRestTimer(exerciseIndex) {
     if (pauseBtn) {
         pauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
     }
+}
+
+// Save timer state to global variable before modal re-render
+function saveActiveTimerState(exerciseIndex) {
+    const modalTimer = document.getElementById(`modal-rest-timer-${exerciseIndex}`);
+    if (!modalTimer || modalTimer.classList.contains('hidden') || !modalTimer.timerData) {
+        activeRestTimer = null;
+        return;
+    }
+
+    const exercise = AppState.currentWorkout?.exercises[exerciseIndex];
+    const exerciseLabel = modalTimer.querySelector('.modal-rest-exercise')?.textContent || `Rest Period - ${exercise?.machine || 'Exercise'}`;
+
+    // Cancel animation frame but preserve state
+    if (modalTimer.timerData.animationFrame) {
+        cancelAnimationFrame(modalTimer.timerData.animationFrame);
+    }
+
+    activeRestTimer = {
+        exerciseIndex,
+        exerciseLabel,
+        timeLeft: modalTimer.timerData.timeLeft,
+        isPaused: modalTimer.timerData.isPaused,
+        startTime: modalTimer.timerData.startTime,
+        pausedTime: modalTimer.timerData.pausedTime
+    };
+}
+
+// Restore timer state from global variable after modal re-render
+function restoreActiveTimerState(exerciseIndex) {
+    if (!activeRestTimer || activeRestTimer.exerciseIndex !== exerciseIndex) {
+        return;
+    }
+
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+        restoreModalRestTimer(exerciseIndex, activeRestTimer);
+        activeRestTimer = null;
+    }, 50);
 }
 
 export function startWorkoutTimer() {

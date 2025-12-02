@@ -447,20 +447,26 @@ export function getWorkoutHistory(appState) {
         let actionButtons = '';
         if (workout.status === 'cancelled' || workout.status === 'partial') {
             actionButtons = `
-                <div style="display: flex; gap: 1rem; justify-content: center;">
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="editHistoricalWorkout('${date}')">
+                        <i class="fas fa-edit"></i> Edit Workout
+                    </button>
                     <button class="btn btn-danger" onclick="deleteWorkoutFromCalendar('${date}')">
-                        <i class="fas fa-trash"></i> Delete This Workout
+                        <i class="fas fa-trash"></i> Delete
                     </button>
                     <button class="btn btn-secondary" onclick="repeatWorkout('${date}')">
-                        <i class="fas fa-redo"></i> Repeat Workout
+                        <i class="fas fa-redo"></i> Repeat
                     </button>
                 </div>
             `;
         } else {
             actionButtons = `
                 <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="editHistoricalWorkout('${date}')">
+                        <i class="fas fa-edit"></i> Edit Workout
+                    </button>
                     <button class="btn btn-secondary" onclick="repeatWorkout('${date}')">
-                        <i class="fas fa-redo"></i> Repeat Workout
+                        <i class="fas fa-redo"></i> Repeat
                     </button>
                     <button class="btn btn-danger" onclick="deleteWorkoutFromCalendar('${date}')">
                         <i class="fas fa-trash"></i> Delete
@@ -663,22 +669,31 @@ showFixedWorkoutModal(workout) {
             <button class="btn btn-primary" onclick="resumeWorkout('${workout.date}')">
                 <i class="fas fa-play"></i> Resume Workout
             </button>
+            <button class="btn btn-secondary" onclick="editHistoricalWorkout('${workout.date}')">
+                <i class="fas fa-edit"></i> Edit
+            </button>
             <button class="btn btn-danger" onclick="deleteWorkoutFromCalendar('${workout.date}')">
                 <i class="fas fa-trash"></i> Delete
             </button>`;
     } else if (workoutStatus === 'cancelled' || workoutStatus === 'partial') {
         actionButtons = `
+            <button class="btn btn-primary" onclick="editHistoricalWorkout('${workout.date}')">
+                <i class="fas fa-edit"></i> Edit Workout
+            </button>
             <button class="btn btn-danger" onclick="deleteWorkoutFromCalendar('${workout.date}')">
-                <i class="fas fa-trash"></i> Delete This Workout
+                <i class="fas fa-trash"></i> Delete
             </button>
             <button class="btn btn-secondary" onclick="repeatWorkout('${workout.date}')">
-                <i class="fas fa-redo"></i> Repeat Workout
+                <i class="fas fa-redo"></i> Repeat
             </button>`;
     } else {
-        // Completed workout - show Repeat button
+        // Completed workout - show Edit and Repeat buttons
         actionButtons = `
+            <button class="btn btn-primary" onclick="editHistoricalWorkout('${workout.date}')">
+                <i class="fas fa-edit"></i> Edit Workout
+            </button>
             <button class="btn btn-secondary" onclick="repeatWorkout('${workout.date}')">
-                <i class="fas fa-redo"></i> Repeat Workout
+                <i class="fas fa-redo"></i> Repeat
             </button>
             <button class="btn btn-danger" onclick="deleteWorkoutFromCalendar('${workout.date}')">
                 <i class="fas fa-trash"></i> Delete
