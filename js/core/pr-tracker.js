@@ -7,7 +7,7 @@ import { db, doc, setDoc, getDoc } from './firebase-config.js';
 // ===================================================================
 // PR CUTOFF DATE - Only count PRs from this date onwards
 // ===================================================================
-const PR_CUTOFF_DATE = '2024-12-01';
+const PR_CUTOFF_DATE = '2025-12-01';
 
 // ===================================================================
 // PR TRACKING STATE
