@@ -398,6 +398,18 @@ export function closeLocationSelector() {
     // No-op for compatibility
 }
 
+export function selectSavedLocation() {
+    // No-op for compatibility - replaced by setLocationAsCurrent
+}
+
+export function selectNewLocation() {
+    // No-op for compatibility - replaced by addNewLocationFromManagement
+}
+
+export function skipLocationSelection() {
+    // No-op for compatibility
+}
+
 export function changeLocation() {
     showLocationManagement();
 }

@@ -1905,12 +1905,9 @@ async function initializeWorkoutLocation() {
         } else if (result.isNew && result.coords) {
             // At a new location - prompt user to name it
             await promptForNewLocation(result.coords, workoutManager, savedLocations);
-        } else if (!result.coords && savedLocations.length > 0) {
-            // No GPS available - use most recently visited location
-            const mostRecent = savedLocations[0]; // Already sorted by lastVisit desc
-            if (mostRecent) {
-                setSessionLocation(mostRecent.name);
-            }
+        } else if (!result.coords) {
+            // No GPS available - prompt user to select/enter location
+            await promptForLocationSelection(workoutManager, savedLocations);
         }
 
     } catch (error) {
@@ -1920,7 +1917,7 @@ async function initializeWorkoutLocation() {
 }
 
 /**
- * Prompt user to name a new location
+ * Prompt user to name a new location (when GPS detected a new location)
  */
 function promptForNewLocation(coords, workoutManager, savedLocations) {
     return new Promise((resolve) => {
@@ -1948,6 +1945,53 @@ function promptForNewLocation(coords, workoutManager, savedLocations) {
                             name: name,
                             latitude: coords.latitude,
                             longitude: coords.longitude
+                        });
+                        setSessionLocation(name);
+                    }
+
+                    showNotification(`Location set: ${name}`, 'success');
+                } catch (error) {
+                    console.error('❌ Error saving location:', error);
+                }
+                resolve();
+            },
+            // On skip
+            () => {
+                resolve();
+            }
+        );
+    });
+}
+
+/**
+ * Prompt user to select or enter a location (when no GPS available)
+ */
+function promptForLocationSelection(workoutManager, savedLocations) {
+    return new Promise((resolve) => {
+        // Populate datalist with existing locations for autocomplete
+        const datalist = document.getElementById('saved-locations-list');
+        if (datalist && savedLocations.length > 0) {
+            datalist.innerHTML = savedLocations
+                .map(loc => `<option value="${loc.name}">`)
+                .join('');
+        }
+
+        showLocationPrompt(
+            // On save
+            async (name) => {
+                try {
+                    // Check if this is an existing location name
+                    const existing = savedLocations.find(loc => loc.name === name);
+
+                    if (existing) {
+                        setSessionLocation(name);
+                        await workoutManager.updateLocationVisit(existing.id);
+                    } else {
+                        // Create new location without GPS coordinates
+                        await workoutManager.saveLocation({
+                            name: name,
+                            latitude: null,
+                            longitude: null
                         });
                         setSessionLocation(name);
                     }
