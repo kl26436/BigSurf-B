@@ -5,10 +5,26 @@ import { showNotification } from './ui-helpers.js';
 import { AppState } from './app-state.js';
 import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
 import { getSessionLocation, setSessionLocation, getCurrentPosition, findNearbyLocation } from './location-service.js';
+import { functions, httpsCallable } from './firebase-config.js';
 
 let workoutManager = null;
 let cachedLocations = [];
 let currentLocationName = null;
+
+/**
+ * Fetch city/state from coordinates via Cloud Function
+ * Results are saved to Firebase so we only call once per location
+ */
+async function reverseGeocode(latitude, longitude) {
+    try {
+        const reverseGeocodeFunc = httpsCallable(functions, 'reverseGeocode');
+        const result = await reverseGeocodeFunc({ latitude, longitude });
+        return result.data;
+    } catch (error) {
+        console.error('❌ Error reverse geocoding:', error);
+        return { city: null, state: null, formatted: null };
+    }
+}
 
 // Initialize workout manager
 function getWorkoutManager() {
@@ -56,22 +72,27 @@ export async function showLocationManagement() {
     // Auto-detect current GPS location and match to saved locations
     try {
         const coords = await getCurrentPosition();
+
         if (coords) {
             window.currentGPSCoords = coords;
             updateLocationMap(); // Update map with current location
 
             // Try to match GPS to a saved location
-            const matchedLocation = findNearbyLocation(cachedLocations, coords);
-            if (matchedLocation && !currentLocationName) {
-                // Auto-set as current location if not already set
+            // Use a larger effective radius if GPS accuracy is poor (cap at 5km for reasonable matching)
+            const effectiveRadius = Math.min(Math.max(coords.accuracy || 500, 500), 5000);
+            const matchedLocation = findNearbyLocation(cachedLocations, coords, effectiveRadius);
+
+            if (matchedLocation) {
+                // Auto-set as current location based on GPS match
                 currentLocationName = matchedLocation.name;
                 setSessionLocation(matchedLocation.name);
                 updateCurrentLocationDisplay();
                 renderLocationManagementList(); // Re-render to show CURRENT badge
+                showNotification(`Detected: ${matchedLocation.name}`, 'success');
             }
         }
     } catch (error) {
-        console.error('Error auto-detecting GPS:', error);
+        console.error('❌ Error auto-detecting GPS:', error);
     }
 }
 
@@ -144,10 +165,26 @@ function renderLocationManagementList() {
     container.innerHTML = cachedLocations.map(location => {
         const isCurrent = location.name === currentLocationName;
         const lastVisit = formatLocationDate(location.lastVisit);
+        const hasGPS = location.latitude && location.longitude;
+
+        // Show city/state if available, otherwise GPS status
+        let gpsDisplay;
+        if (hasGPS && location.cityState) {
+            // Has GPS and city/state - show the city/state
+            gpsDisplay = `<span class="location-city-state"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(location.cityState)}</span>`;
+        } else if (hasGPS) {
+            // Has GPS but no city/state yet - show "GPS Saved" and fetch city/state
+            gpsDisplay = `<span class="location-gps-info" id="gps-info-${location.id}"><i class="fas fa-check-circle"></i> GPS Saved</span>`;
+            // Fetch city/state in background and save it
+            fetchAndSaveCityState(location);
+        } else {
+            // No GPS
+            gpsDisplay = '<span class="location-no-gps"><i class="fas fa-map-marker-alt"></i> No GPS</span>';
+        }
 
         return `
             <div class="location-management-item ${isCurrent ? 'active' : ''}">
-                <div class="location-item-info" onclick="setLocationAsCurrent('${escapeHtml(location.name)}')">
+                <div class="location-item-info" onclick="showLocationOnMapById('${escapeHtml(location.id)}')">
                     <div class="location-item-icon">
                         <i class="fas fa-map-marker-alt"></i>
                     </div>
@@ -155,6 +192,9 @@ function renderLocationManagementList() {
                         <div class="location-item-name">
                             ${escapeHtml(location.name)}
                             ${isCurrent ? '<span class="current-badge">CURRENT</span>' : ''}
+                        </div>
+                        <div class="location-item-address">
+                            ${gpsDisplay}
                         </div>
                         <div class="location-item-meta">
                             ${location.visitCount || 0} workout${(location.visitCount || 0) !== 1 ? 's' : ''} • Last: ${lastVisit}
@@ -172,6 +212,7 @@ function renderLocationManagementList() {
             </div>
         `;
     }).join('');
+
 }
 
 /**
@@ -202,6 +243,43 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+/**
+ * Fetch city/state from coordinates and save to Firebase
+ * Called once per location, then cached in Firebase
+ */
+async function fetchAndSaveCityState(location) {
+    if (!location.latitude || !location.longitude || location.cityState) return;
+
+    try {
+        const geoData = await reverseGeocode(location.latitude, location.longitude);
+        if (geoData.formatted) {
+            const manager = getWorkoutManager();
+            await manager.updateLocation(location.id, { cityState: geoData.formatted });
+            // Update cache
+            location.cityState = geoData.formatted;
+            // Re-render to show updated city/state
+            renderLocationManagementList();
+        }
+    } catch (error) {
+        console.error('❌ Error fetching city/state:', error);
+    }
+}
+
+/**
+ * Show a location on the map without changing current session location
+ * Used when user taps a location just to see it on the map
+ */
+export function showLocationOnMapById(locationId) {
+    const location = cachedLocations.find(loc => loc.id === locationId);
+    if (!location) return;
+
+    if (location.latitude && location.longitude) {
+        showLocationOnMap(location.latitude, location.longitude, location.name);
+    } else {
+        showNotification('This location has no GPS saved', 'info');
+    }
 }
 
 /**
@@ -243,6 +321,45 @@ export async function setLocationAsCurrent(locationName) {
     showNotification(`Location set to ${locationName}`, 'success');
     renderLocationManagementList();
     updateCurrentLocationDisplay();
+}
+
+/**
+ * Update GPS for an existing location (re-save current position)
+ */
+export async function updateLocationGPS(locationId) {
+    const location = cachedLocations.find(loc => loc.id === locationId);
+    if (!location) return;
+
+    if (!window.currentGPSCoords) {
+        showNotification('Getting GPS...', 'info');
+        const coords = await getCurrentPosition();
+        if (!coords) {
+            showNotification('Could not get GPS location', 'error');
+            return;
+        }
+        window.currentGPSCoords = coords;
+    }
+
+    try {
+        const manager = getWorkoutManager();
+        await manager.updateLocation(locationId, {
+            latitude: window.currentGPSCoords.latitude,
+            longitude: window.currentGPSCoords.longitude,
+            radius: null // Reset to use default radius
+        });
+
+        // Update cache
+        location.latitude = window.currentGPSCoords.latitude;
+        location.longitude = window.currentGPSCoords.longitude;
+        location.radius = null;
+
+        showNotification(`GPS updated for ${location.name}`, 'success');
+        renderLocationManagementList();
+        updateLocationMap();
+    } catch (error) {
+        console.error('Error updating location GPS:', error);
+        showNotification('Error updating GPS', 'error');
+    }
 }
 
 /**

@@ -94,7 +94,7 @@ import {
     changeLocation,
     showLocationManagement, closeLocationManagement,
     setLocationAsCurrent, addNewLocationFromManagement, detectAndAddLocation,
-    editLocationName, deleteLocation
+    editLocationName, deleteLocation, showLocationOnMapById
 } from './core/location-ui.js';
 
 // Location service (GPS-based location detection)
@@ -313,6 +313,7 @@ window.changeLocation = changeLocation;
 window.showLocationManagement = showLocationManagement;
 window.closeLocationManagement = closeLocationManagement;
 window.setLocationAsCurrent = setLocationAsCurrent;
+window.showLocationOnMapById = showLocationOnMapById;
 window.addNewLocationFromManagement = addNewLocationFromManagement;
 window.detectAndAddLocation = detectAndAddLocation;
 window.editLocationName = editLocationName;

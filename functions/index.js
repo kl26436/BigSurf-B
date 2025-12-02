@@ -1,6 +1,7 @@
 /**
  * Firebase Cloud Functions for Big Surf Workout Tracker
  * Handles scheduled push notifications for rest timers on iOS
+ * Includes reverse geocoding for location city/state display
  *
  * Uses Web Push API directly (more reliable on iOS Safari than FCM)
  */
@@ -8,6 +9,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const webpush = require('web-push');
+const https = require('https');
 
 admin.initializeApp();
 
@@ -367,3 +369,65 @@ exports.sendDueNativeNotifications = functions.pubsub
         await Promise.all(promises);
         return null;
     });
+
+// ============================================================================
+// REVERSE GEOCODING (Location City/State lookup)
+// ============================================================================
+
+/**
+ * Reverse geocode coordinates to get city and state
+ * Uses OpenStreetMap Nominatim API (free, no API key required)
+ * Called from client to bypass CORS restrictions
+ */
+exports.reverseGeocode = functions.https.onCall(async (data, context) => {
+    // Authentication optional for this read-only endpoint
+    const { latitude, longitude } = data;
+
+    if (!latitude || !longitude) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing latitude or longitude');
+    }
+
+    return new Promise((resolve, reject) => {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`;
+
+        const options = {
+            headers: {
+                'User-Agent': 'BigSurf-Workout-Tracker/1.0 (https://bigsurf.fit)'
+            }
+        };
+
+        https.get(url, options, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    const json = JSON.parse(data);
+                    const address = json.address || {};
+
+                    // Extract city (try multiple fields)
+                    const city = address.city || address.town || address.village ||
+                                 address.municipality || address.suburb || null;
+
+                    // Extract state
+                    const state = address.state || address.region || null;
+
+                    resolve({
+                        city: city,
+                        state: state,
+                        formatted: city && state ? `${city}, ${state}` : (city || state || null)
+                    });
+                } catch (error) {
+                    console.error('❌ Error parsing geocode response:', error);
+                    resolve({ city: null, state: null, formatted: null });
+                }
+            });
+        }).on('error', (error) => {
+            console.error('❌ Error calling Nominatim:', error);
+            resolve({ city: null, state: null, formatted: null });
+        });
+    });
+});

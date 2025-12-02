@@ -5,8 +5,8 @@ import { AppState } from './app-state.js';
 import { showNotification } from './ui-helpers.js';
 
 // Default radius in meters for location matching
-// 200m accounts for GPS inaccuracy indoors and parking lot distance
-const DEFAULT_LOCATION_RADIUS = 200;
+// 500m accounts for GPS inaccuracy indoors, parking lot distance, and multi-building facilities
+const DEFAULT_LOCATION_RADIUS = 500;
 
 // Current session location state
 let currentLocation = null;
@@ -78,7 +78,7 @@ function toRadians(degrees) {
  * @param {{latitude: number, longitude: number}} coords - Current coordinates
  * @returns {Object | null} Matching location or null
  */
-export function findNearbyLocation(savedLocations, coords) {
+export function findNearbyLocation(savedLocations, coords, minRadius = null) {
     if (!savedLocations || !coords) return null;
 
     for (const location of savedLocations) {
@@ -91,9 +91,14 @@ export function findNearbyLocation(savedLocations, coords) {
             location.longitude
         );
 
-        const radius = location.radius || DEFAULT_LOCATION_RADIUS;
+        // Use the larger of: location's saved radius, default radius, or provided minimum radius
+        const locationRadius = location.radius || DEFAULT_LOCATION_RADIUS;
+        const radius = minRadius ? Math.max(locationRadius, minRadius) : locationRadius;
+        const isMatch = distance <= radius;
 
-        if (distance <= radius) {
+        console.log(`📍 ${location.name}: ${Math.round(distance)}m away (radius: ${radius}m) - ${isMatch ? 'MATCH' : 'too far'}`);
+
+        if (isMatch) {
             return location;
         }
     }

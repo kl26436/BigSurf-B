@@ -9240,6 +9240,46 @@ body:not(.no-bottom-nav) .menu-toggle {
     color: var(--text-secondary);
 }
 
+.location-item-address {
+    font-size: 0.85rem;
+    margin-top: 2px;
+}
+
+.location-gps-info {
+    color: var(--primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.location-gps-info i {
+    font-size: 0.75rem;
+}
+
+.location-no-gps {
+    color: var(--text-secondary);
+    opacity: 0.7;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.location-no-gps i {
+    font-size: 0.75rem;
+}
+
+.location-city-state {
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.location-city-state i {
+    font-size: 0.75rem;
+    color: var(--primary);
+}
+
 .location-item-actions {
     display: flex;
     gap: 0.5rem;
