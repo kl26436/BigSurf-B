@@ -4,6 +4,8 @@
 import { PRTracker } from './pr-tracker.js';
 import { StreakTracker } from './streak-tracker.js';
 import { setBottomNavVisible } from './navigation.js';
+import { AppState } from './app-state.js';
+import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
 
 // ===================================================================
 // STATE
@@ -61,7 +63,11 @@ async function renderStatsView() {
         const dayFrequency = await StreakTracker.getWorkoutFrequencyByDay();
 
         const prGroups = PRTracker.getAllPRs();
-        const locations = PRTracker.getLocations();
+
+        // Get locations from Firebase instead of PRTracker
+        const workoutManager = new FirebaseWorkoutManager(AppState);
+        const firebaseLocations = await workoutManager.getUserLocations();
+        const locations = firebaseLocations.map(loc => loc.name);
 
         // Transform PR data to individual records with value field
         const allPRs = [];
