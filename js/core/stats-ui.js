@@ -1,5 +1,5 @@
 // Stats UI Module - core/stats-ui.js
-// Apple Health-style stats page with expandable sections
+// Stats page matching the mockup design
 
 import { PRTracker } from './pr-tracker.js';
 import { StreakTracker } from './streak-tracker.js';
@@ -14,15 +14,13 @@ import { db, collection, query, where, getDocs, orderBy } from './firebase-confi
 
 let statsData = {
     streaks: null,
-    dayFrequency: null,
-    quickStats: null,
-    recentPRs: null,
-    badges: null
+    insights: null,
+    badges: null,
+    recentPRs: null
 };
 
 let expandedSections = {
-    streaks: false,
-    quickStats: false,
+    insights: false,
     badges: false,
     prs: false
 };
@@ -42,11 +40,7 @@ export async function showStats() {
     }
 
     statsSection.classList.remove('hidden');
-
-    // Hide bottom nav on stats (accessed from More menu)
     setBottomNavVisible(false);
-
-    // Render stats view
     await renderStatsView();
 }
 
@@ -69,7 +63,6 @@ async function renderStatsView() {
     const container = document.getElementById('stats-content');
     if (!container) return;
 
-    // Show loading
     container.innerHTML = `
         <div class="stats-loading">
             <div class="spinner"></div>
@@ -78,20 +71,17 @@ async function renderStatsView() {
     `;
 
     try {
-        // Load all stats data in parallel
-        const [streaks, dayFrequency, quickStats, badges] = await Promise.all([
+        const [streaks, insights, badges] = await Promise.all([
             StreakTracker.calculateStreaks(),
-            StreakTracker.getWorkoutFrequencyByDay(),
-            calculateQuickStats(),
+            calculateInsights(),
             calculateBadges()
         ]);
 
         statsData = {
             streaks,
-            dayFrequency,
-            quickStats,
+            insights,
             badges,
-            recentPRs: PRTracker.getRecentPRs(3)
+            recentPRs: PRTracker.getRecentPRs(5)
         };
 
         container.innerHTML = `
@@ -104,10 +94,10 @@ async function renderStatsView() {
             </div>
 
             <div class="stats-sections">
-                ${renderStreaksSection()}
-                ${renderQuickStatsSection()}
+                ${renderStreakBoxes()}
+                ${renderInsightsSection()}
                 ${renderBadgesSection()}
-                ${renderPRsSection()}
+                ${renderRecentPRsSection()}
             </div>
         `;
 
@@ -130,200 +120,122 @@ async function renderStatsView() {
 }
 
 // ===================================================================
-// STREAKS SECTION
+// STREAK BOXES (Top Row - 3 boxes)
 // ===================================================================
 
-function renderStreaksSection() {
-    const stats = statsData.streaks;
-    const isExpanded = expandedSections.streaks;
-
-    if (!stats) {
-        return `
-            <div class="stats-card">
-                <div class="stats-card-header" onclick="toggleStatsSection('streaks')">
-                    <div class="stats-card-title">
-                        <i class="fas fa-fire" style="color: #ff6b35;"></i>
-                        <span>Streaks</span>
-                    </div>
-                    <span class="view-all-link">View All <i class="fas fa-chevron-right"></i></span>
-                </div>
-                <div class="stats-card-empty">
-                    <p>No workout data yet</p>
-                </div>
-            </div>
-        `;
-    }
+function renderStreakBoxes() {
+    const stats = statsData.streaks || { currentStreak: 0, longestStreak: 0, totalWorkouts: 0 };
 
     return `
-        <div class="stats-card ${isExpanded ? 'expanded' : ''}">
-            <div class="stats-card-header" onclick="toggleStatsSection('streaks')">
-                <div class="stats-card-title">
-                    <i class="fas fa-fire" style="color: #ff6b35;"></i>
-                    <span>Streaks</span>
+        <div class="stats-streak-row">
+            <div class="streak-box ${stats.currentStreak > 0 ? 'active' : ''}">
+                <div class="streak-box-icon fire">
+                    <i class="fas fa-fire"></i>
                 </div>
-                <span class="view-all-link">${isExpanded ? 'Less' : 'View All'} <i class="fas fa-chevron-${isExpanded ? 'up' : 'right'}"></i></span>
+                <div class="streak-box-label">CURRENT STREAK</div>
+                <div class="streak-box-value">${stats.currentStreak} days</div>
             </div>
-
-            <div class="stats-card-preview">
-                <div class="streak-preview-grid">
-                    <div class="streak-preview-item ${stats.currentStreak > 0 ? 'active' : ''}">
-                        <div class="streak-preview-icon">
-                            <i class="fas fa-fire"></i>
-                        </div>
-                        <div class="streak-preview-info">
-                            <span class="streak-preview-value">${stats.currentStreak}</span>
-                            <span class="streak-preview-label">Current Streak</span>
-                        </div>
-                    </div>
-                    <div class="streak-preview-item">
-                        <div class="streak-preview-icon trophy">
-                            <i class="fas fa-trophy"></i>
-                        </div>
-                        <div class="streak-preview-info">
-                            <span class="streak-preview-value">${stats.longestStreak}</span>
-                            <span class="streak-preview-label">Longest Streak</span>
-                        </div>
-                    </div>
+            <div class="streak-box">
+                <div class="streak-box-icon trophy">
+                    <i class="fas fa-trophy"></i>
                 </div>
+                <div class="streak-box-label">LONGEST STREAK</div>
+                <div class="streak-box-value">${stats.longestStreak} days</div>
             </div>
-
-            ${isExpanded ? renderStreaksExpanded(stats) : ''}
+            <div class="streak-box">
+                <div class="streak-box-icon total">
+                    <i class="fas fa-dumbbell"></i>
+                </div>
+                <div class="streak-box-label">TOTAL WORKOUTS</div>
+                <div class="streak-box-value">${stats.totalWorkouts}</div>
+            </div>
         </div>
     `;
 }
 
-function renderStreaksExpanded(stats) {
-    const dayFrequency = statsData.dayFrequency || [];
-    const maxCount = Math.max(...dayFrequency.map(d => d.count), 1);
+// ===================================================================
+// INSIGHTS SECTION (2x2 Grid)
+// ===================================================================
+
+function renderInsightsSection() {
+    const insights = statsData.insights || {};
+    const isExpanded = expandedSections.insights;
 
     return `
-        <div class="stats-card-expanded">
-            <div class="stats-mini-grid">
-                <div class="stats-mini-item">
-                    <i class="fas fa-dumbbell"></i>
-                    <span class="stats-mini-value">${stats.totalWorkouts}</span>
-                    <span class="stats-mini-label">Total Workouts</span>
-                </div>
-                <div class="stats-mini-item">
-                    <i class="fas fa-calendar-week"></i>
-                    <span class="stats-mini-value">${stats.workoutsThisWeek}</span>
-                    <span class="stats-mini-label">This Week</span>
-                </div>
-                <div class="stats-mini-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    <span class="stats-mini-value">${stats.workoutsThisMonth}</span>
-                    <span class="stats-mini-label">This Month</span>
+        <div class="stats-section-header" onclick="toggleStatsSection('insights')">
+            <span class="stats-section-title">Insights</span>
+            <span class="view-more-link">${isExpanded ? 'Less' : 'View More'}</span>
+        </div>
+
+        <div class="insights-grid">
+            <div class="insight-box">
+                <div class="insight-label">Day of Week</div>
+                <div class="insight-value">${insights.topDays || 'N/A'}</div>
+            </div>
+            <div class="insight-box">
+                <div class="insight-label">Time of Day</div>
+                <div class="insight-value">${insights.timeOfDay || 'N/A'}</div>
+            </div>
+            <div class="insight-box">
+                <div class="insight-label">Most Used Location</div>
+                <div class="insight-value location">
+                    <i class="fas fa-map-marker-alt"></i>
+                    ${insights.topLocation || 'N/A'}
                 </div>
             </div>
-
-            ${dayFrequency.length > 0 ? `
-                <div class="frequency-chart">
-                    <h4>Workout Frequency</h4>
-                    <div class="frequency-bars">
-                        ${dayFrequency.map(({ day, count }) => {
-                            const percentage = (count / maxCount) * 100;
-                            return `
-                                <div class="frequency-bar-item">
-                                    <div class="frequency-bar-track">
-                                        <div class="frequency-bar-fill" style="height: ${percentage}%;"></div>
-                                    </div>
-                                    <div class="frequency-day">${day.slice(0, 1)}</div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
+            <div class="insight-box">
+                <div class="insight-label">Most Used Workout</div>
+                <div class="insight-value">${insights.topWorkout || 'N/A'}</div>
+            </div>
+            ${isExpanded ? `
+            <div class="insight-box">
+                <div class="insight-label">Total Volume This Month</div>
+                <div class="insight-value">${insights.totalVolume || 'N/A'}</div>
+            </div>
+            <div class="insight-box">
+                <div class="insight-label">Avg Duration</div>
+                <div class="insight-value">${insights.avgDuration || 'N/A'}</div>
+            </div>
             ` : ''}
         </div>
     `;
 }
 
-// ===================================================================
-// QUICK STATS SECTION
-// ===================================================================
-
-function renderQuickStatsSection() {
-    const stats = statsData.quickStats;
-    const isExpanded = expandedSections.quickStats;
-
-    if (!stats) {
-        return `
-            <div class="stats-card">
-                <div class="stats-card-header" onclick="toggleStatsSection('quickStats')">
-                    <div class="stats-card-title">
-                        <i class="fas fa-chart-bar" style="color: var(--primary);"></i>
-                        <span>Quick Stats</span>
-                    </div>
-                    <span class="view-all-link">View All <i class="fas fa-chevron-right"></i></span>
-                </div>
-                <div class="stats-card-empty">
-                    <p>Complete workouts to see stats</p>
-                </div>
-            </div>
-        `;
-    }
-
+function renderInsightsExpanded(insights) {
     return `
-        <div class="stats-card ${isExpanded ? 'expanded' : ''}">
-            <div class="stats-card-header" onclick="toggleStatsSection('quickStats')">
-                <div class="stats-card-title">
-                    <i class="fas fa-chart-bar" style="color: var(--primary);"></i>
-                    <span>Quick Stats</span>
-                </div>
-                <span class="view-all-link">${isExpanded ? 'Less' : 'View All'} <i class="fas fa-chevron-${isExpanded ? 'up' : 'right'}"></i></span>
-            </div>
-
-            <div class="quick-stats-preview">
-                <div class="quick-stat-item">
-                    <span class="quick-stat-label">Most Active Day</span>
-                    <span class="quick-stat-value">${stats.mostActiveDay || 'N/A'}</span>
-                </div>
-                <div class="quick-stat-divider"></div>
-                <div class="quick-stat-item">
-                    <span class="quick-stat-label">Top Location</span>
-                    <span class="quick-stat-value">${truncateText(stats.topLocation || 'N/A', 15)}</span>
-                </div>
-            </div>
-
-            ${isExpanded ? renderQuickStatsExpanded(stats) : ''}
-        </div>
-    `;
-}
-
-function renderQuickStatsExpanded(stats) {
-    return `
-        <div class="stats-card-expanded">
-            <div class="expanded-stat-row">
-                <div class="expanded-stat-icon">
-                    <i class="fas fa-dumbbell"></i>
-                </div>
-                <div class="expanded-stat-info">
-                    <span class="expanded-stat-label">Favorite Workout</span>
-                    <span class="expanded-stat-value">${stats.favoriteWorkout || 'N/A'}</span>
-                </div>
-                <span class="expanded-stat-count">${stats.favoriteWorkoutCount || 0}x</span>
-            </div>
-
-            ${stats.locationBreakdown && stats.locationBreakdown.length > 0 ? `
-                <div class="location-breakdown">
+        <div class="insights-expanded">
+            ${insights.locationBreakdown && insights.locationBreakdown.length > 0 ? `
+                <div class="expanded-section">
                     <h4>Workouts by Location</h4>
-                    ${stats.locationBreakdown.slice(0, 5).map(loc => `
-                        <div class="location-breakdown-row">
+                    ${insights.locationBreakdown.slice(0, 5).map(loc => `
+                        <div class="breakdown-row">
                             <i class="fas fa-map-marker-alt"></i>
-                            <span class="location-name">${loc.name}</span>
-                            <span class="location-count">${loc.count} workout${loc.count !== 1 ? 's' : ''}</span>
+                            <span class="breakdown-name">${loc.name}</span>
+                            <span class="breakdown-count">${loc.count}</span>
                         </div>
                     `).join('')}
                 </div>
             ` : ''}
 
-            <div class="expanded-stat-row">
-                <div class="expanded-stat-icon">
-                    <i class="fas fa-clock"></i>
+            ${insights.workoutBreakdown && insights.workoutBreakdown.length > 0 ? `
+                <div class="expanded-section">
+                    <h4>Workouts by Type</h4>
+                    ${insights.workoutBreakdown.slice(0, 5).map(w => `
+                        <div class="breakdown-row">
+                            <i class="fas fa-dumbbell"></i>
+                            <span class="breakdown-name">${w.name}</span>
+                            <span class="breakdown-count">${w.count}</span>
+                        </div>
+                    `).join('')}
                 </div>
-                <div class="expanded-stat-info">
-                    <span class="expanded-stat-label">Average Workout</span>
-                    <span class="expanded-stat-value">${stats.avgDuration || 'N/A'}</span>
+            ` : ''}
+
+            <div class="expanded-section">
+                <h4>Average Workout</h4>
+                <div class="breakdown-row">
+                    <i class="fas fa-clock"></i>
+                    <span class="breakdown-name">Duration</span>
+                    <span class="breakdown-count">${insights.avgDuration || 'N/A'}</span>
                 </div>
             </div>
         </div>
@@ -331,78 +243,73 @@ function renderQuickStatsExpanded(stats) {
 }
 
 // ===================================================================
-// BADGES SECTION
+// BADGES SECTION (4-column Grid of Colored Icons)
 // ===================================================================
 
 function renderBadgesSection() {
-    const badges = statsData.badges;
+    const badges = statsData.badges || [];
     const isExpanded = expandedSections.badges;
-
-    const earnedBadges = badges ? badges.filter(b => b.earned) : [];
-    const unearnedBadges = badges ? badges.filter(b => !b.earned) : [];
+    const earnedBadges = badges.filter(b => b.earned);
 
     return `
-        <div class="stats-card ${isExpanded ? 'expanded' : ''}">
-            <div class="stats-card-header" onclick="toggleStatsSection('badges')">
-                <div class="stats-card-title">
-                    <i class="fas fa-medal" style="color: #ffd700;"></i>
-                    <span>Badges</span>
-                    ${earnedBadges.length > 0 ? `<span class="badge-count">${earnedBadges.length}</span>` : ''}
-                </div>
-                <span class="view-all-link">${isExpanded ? 'Less' : 'View All'} <i class="fas fa-chevron-${isExpanded ? 'up' : 'right'}"></i></span>
-            </div>
-
-            <div class="badges-preview">
-                ${earnedBadges.length > 0 ? `
-                    <div class="badges-row">
-                        ${earnedBadges.slice(0, 5).map(badge => `
-                            <div class="badge-item earned" title="${badge.name}">
-                                <i class="${badge.icon}"></i>
-                            </div>
-                        `).join('')}
-                        ${earnedBadges.length > 5 ? `<span class="badges-more">+${earnedBadges.length - 5}</span>` : ''}
-                    </div>
-                ` : `
-                    <p class="badges-empty">Complete workouts to earn badges!</p>
-                `}
-            </div>
-
-            ${isExpanded ? renderBadgesExpanded(earnedBadges, unearnedBadges) : ''}
+        <div class="stats-section-header" onclick="toggleStatsSection('badges')">
+            <span class="stats-section-title">Badges</span>
+            <span class="view-more-link">${isExpanded ? 'Less' : 'View All'}</span>
         </div>
+
+        <div class="badges-row-preview">
+            ${earnedBadges.length > 0 ? earnedBadges.slice(0, 4).map(badge => `
+                <div class="badge-preview-item ${badge.colorClass}">
+                    <div class="badge-preview-icon">
+                        <i class="${badge.icon}"></i>
+                        ${badge.countBadge ? `<span class="badge-count-overlay">${badge.countBadge}</span>` : ''}
+                    </div>
+                    <span class="badge-preview-label">${badge.shortName}</span>
+                </div>
+            `).join('') : `
+                <div class="badges-empty-msg">Complete workouts to earn badges!</div>
+            `}
+        </div>
+
+        ${isExpanded ? renderBadgesExpanded(badges) : ''}
     `;
 }
 
-function renderBadgesExpanded(earned, unearned) {
+function renderBadgesExpanded(badges) {
+    const earned = badges.filter(b => b.earned);
+    const inProgress = badges.filter(b => !b.earned);
+
     return `
-        <div class="stats-card-expanded">
+        <div class="badges-expanded">
             ${earned.length > 0 ? `
-                <div class="badges-section">
+                <div class="badges-grid-section">
                     <h4>Earned</h4>
-                    <div class="badges-grid">
+                    <div class="badges-full-grid">
                         ${earned.map(badge => `
-                            <div class="badge-card earned">
-                                <div class="badge-icon">
+                            <div class="badge-full-item ${badge.colorClass}">
+                                <div class="badge-full-icon">
                                     <i class="${badge.icon}"></i>
+                                    ${badge.countBadge ? `<span class="badge-count-overlay">${badge.countBadge}</span>` : ''}
                                 </div>
-                                <span class="badge-name">${badge.name}</span>
-                                <span class="badge-desc">${badge.description}</span>
+                                <span class="badge-full-name">${badge.name}</span>
+                                <span class="badge-full-desc">${badge.description}</span>
                             </div>
                         `).join('')}
                     </div>
                 </div>
             ` : ''}
 
-            ${unearned.length > 0 ? `
-                <div class="badges-section">
+            ${inProgress.length > 0 ? `
+                <div class="badges-grid-section">
                     <h4>In Progress</h4>
-                    <div class="badges-grid">
-                        ${unearned.slice(0, 6).map(badge => `
-                            <div class="badge-card locked">
-                                <div class="badge-icon">
+                    <div class="badges-full-grid">
+                        ${inProgress.map(badge => `
+                            <div class="badge-full-item locked">
+                                <div class="badge-full-icon">
                                     <i class="${badge.icon}"></i>
                                 </div>
-                                <span class="badge-name">${badge.name}</span>
-                                <span class="badge-progress">${badge.progress || ''}</span>
+                                <span class="badge-full-name">${badge.name}</span>
+                                <span class="badge-full-progress">${badge.progress || ''}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -413,49 +320,53 @@ function renderBadgesExpanded(earned, unearned) {
 }
 
 // ===================================================================
-// PRS SECTION
+// RECENT PRS SECTION
 // ===================================================================
 
-function renderPRsSection() {
+function renderRecentPRsSection() {
     const recentPRs = statsData.recentPRs || [];
     const isExpanded = expandedSections.prs;
     const totalPRCount = PRTracker.getTotalPRCount();
 
     return `
-        <div class="stats-card ${isExpanded ? 'expanded' : ''}">
-            <div class="stats-card-header" onclick="toggleStatsSection('prs')">
-                <div class="stats-card-title">
-                    <i class="fas fa-trophy" style="color: #ffd700;"></i>
-                    <span>Personal Records</span>
-                    ${totalPRCount > 0 ? `<span class="badge-count">${totalPRCount}</span>` : ''}
-                </div>
-                <span class="view-all-link">${isExpanded ? 'Less' : 'View All'} <i class="fas fa-chevron-${isExpanded ? 'up' : 'right'}"></i></span>
-            </div>
+        <div class="stats-section-header mt-lg" onclick="toggleStatsSection('prs')">
+            <span class="stats-section-title">Recent PRs</span>
+            <span class="view-more-link">${isExpanded ? 'Less' : 'View All'}</span>
+        </div>
 
+        <div class="prs-card-new">
             ${recentPRs.length > 0 ? `
-                <div class="prs-preview">
-                    ${recentPRs.map(pr => `
-                        <div class="pr-preview-row">
-                            <div class="pr-preview-info">
-                                <span class="pr-preview-exercise">${pr.exercise}</span>
-                                <span class="pr-preview-equipment">${pr.equipment}</span>
-                            </div>
-                            <div class="pr-preview-value">
-                                <span class="pr-weight">${pr.weight}</span>
-                                <span class="pr-unit">lbs</span>
-                                <span class="pr-reps">x ${pr.reps}</span>
-                            </div>
-                        </div>
-                    `).join('')}
+                <div class="prs-list-new">
+                    ${recentPRs.slice(0, 3).map(pr => renderPRItem(pr)).join('')}
                 </div>
             ` : `
-                <div class="stats-card-empty">
+                <div class="prs-empty-new">
                     <p>No PRs recorded yet</p>
-                    <p class="stats-hint">PRs tracked from ${formatDate(PRTracker.getPRCutoffDate())}</p>
+                    <p class="prs-hint">PRs tracked from ${formatDateShort(PRTracker.getPRCutoffDate())}</p>
                 </div>
             `}
 
             ${isExpanded ? renderPRsExpanded() : ''}
+        </div>
+    `;
+}
+
+function renderPRItem(pr) {
+    const dateDisplay = formatRelativeDate(pr.date);
+
+    return `
+        <div class="pr-item-new">
+            <div class="pr-item-icon">
+                <i class="fas fa-dumbbell"></i>
+            </div>
+            <div class="pr-item-content">
+                <div class="pr-item-exercise">${pr.exercise}</div>
+                <div class="pr-item-details">
+                    <span class="pr-item-type">MAX WEIGHT</span>
+                    <span class="pr-item-value">· ${pr.weight} lb × ${pr.reps}</span>
+                    <span class="pr-item-meta">· ${dateDisplay}${pr.location ? ` · ${pr.location}` : ''}</span>
+                </div>
+            </div>
         </div>
     `;
 }
@@ -465,35 +376,31 @@ function renderPRsExpanded() {
     const bodyParts = Object.keys(prsByBodyPart).sort();
 
     if (bodyParts.length === 0) {
-        return `
-            <div class="stats-card-expanded">
-                <p class="stats-card-empty">Complete workouts to start tracking PRs</p>
-            </div>
-        `;
+        return `<div class="prs-expanded-empty">Complete workouts to start tracking PRs</div>`;
     }
 
     return `
-        <div class="stats-card-expanded pr-browser">
+        <div class="prs-browser">
             ${bodyParts.map(bodyPart => {
                 const exercises = prsByBodyPart[bodyPart];
                 const exerciseCount = Object.keys(exercises).length;
 
                 return `
-                    <div class="pr-body-part-group">
-                        <div class="pr-body-part-header" onclick="togglePRBodyPart('${bodyPart}')">
-                            <span class="pr-body-part-name">${bodyPart}</span>
-                            <span class="pr-body-part-count">${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}</span>
-                            <i class="fas fa-chevron-down pr-expand-icon"></i>
+                    <div class="pr-bodypart-group">
+                        <div class="pr-bodypart-header" onclick="togglePRBodyPart('${bodyPart}')">
+                            <span class="pr-bodypart-name">${bodyPart}</span>
+                            <span class="pr-bodypart-count">${exerciseCount} exercise${exerciseCount !== 1 ? 's' : ''}</span>
+                            <i class="fas fa-chevron-down pr-chevron"></i>
                         </div>
-                        <div class="pr-body-part-content" id="pr-group-${bodyPart.replace(/\s+/g, '-')}">
+                        <div class="pr-bodypart-content" id="pr-group-${bodyPart.replace(/\s+/g, '-')}">
                             ${Object.entries(exercises).map(([exerciseName, equipmentPRs]) => `
-                                <div class="pr-exercise-group">
-                                    <div class="pr-exercise-name">${exerciseName}</div>
+                                <div class="pr-exercise-item">
+                                    <div class="pr-exercise-title">${exerciseName}</div>
                                     ${Object.entries(equipmentPRs).map(([equipment, prs]) => `
-                                        <div class="pr-equipment-row">
-                                            <span class="pr-equipment-name">${equipment}</span>
-                                            <span class="pr-equipment-value">${prs.maxWeight?.weight || 0} lbs x ${prs.maxWeight?.reps || 0}</span>
-                                            <span class="pr-equipment-date">${formatDateShort(prs.maxWeight?.date)}</span>
+                                        <div class="pr-equipment-item">
+                                            <span class="pr-equip-name">${equipment}</span>
+                                            <span class="pr-equip-value">${prs.maxWeight?.weight || 0} lbs x ${prs.maxWeight?.reps || 0}</span>
+                                            <span class="pr-equip-date">${formatDateShort(prs.maxWeight?.date)}</span>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -507,10 +414,10 @@ function renderPRsExpanded() {
 }
 
 // ===================================================================
-// QUICK STATS CALCULATION
+// INSIGHTS CALCULATION
 // ===================================================================
 
-async function calculateQuickStats() {
+async function calculateInsights() {
     if (!AppState.currentUser) return null;
 
     try {
@@ -527,66 +434,104 @@ async function calculateQuickStats() {
         const workouts = [];
         snapshot.forEach(doc => workouts.push({ id: doc.id, ...doc.data() }));
 
-        // Calculate most active day
         const dayCount = {};
+        const hourCount = { morning: 0, afternoon: 0, evening: 0, night: 0 };
         const locationCount = {};
         const workoutTypeCount = {};
         let totalDuration = 0;
+        let monthlyVolume = 0;
+
+        // Get current month for volume calculation
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
 
         workouts.forEach(workout => {
-            // Day of week
             if (workout.completedAt) {
                 const date = new Date(workout.completedAt);
-                const day = date.toLocaleDateString('en-US', { weekday: 'long' });
+                const day = date.toLocaleDateString('en-US', { weekday: 'short' });
                 dayCount[day] = (dayCount[day] || 0) + 1;
+
+                const hour = date.getHours();
+                if (hour >= 5 && hour < 12) hourCount.morning++;
+                else if (hour >= 12 && hour < 17) hourCount.afternoon++;
+                else if (hour >= 17 && hour < 21) hourCount.evening++;
+                else hourCount.night++;
+
+                // Calculate monthly volume
+                if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+                    if (workout.exercises) {
+                        Object.values(workout.exercises).forEach(exercise => {
+                            if (exercise.sets) {
+                                exercise.sets.forEach(set => {
+                                    if (set.weight && set.reps) {
+                                        monthlyVolume += set.weight * set.reps;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                }
             }
 
-            // Location
             if (workout.location) {
                 locationCount[workout.location] = (locationCount[workout.location] || 0) + 1;
             }
 
-            // Workout type
             if (workout.workoutType) {
                 workoutTypeCount[workout.workoutType] = (workoutTypeCount[workout.workoutType] || 0) + 1;
             }
 
-            // Duration
             if (workout.totalDuration) {
                 totalDuration += workout.totalDuration;
             }
         });
 
-        // Find most active day
-        const mostActiveDay = Object.entries(dayCount).sort((a, b) => b[1] - a[1])[0];
+        // Get top 3 days
+        const topDaysArr = Object.entries(dayCount).sort((a, b) => b[1] - a[1]).slice(0, 3);
+        const topDays = topDaysArr.map(d => d[0]).join(', ');
 
-        // Find top location
-        const topLocation = Object.entries(locationCount).sort((a, b) => b[1] - a[1])[0];
+        // Get time of day preference
+        const timeEntries = Object.entries(hourCount).sort((a, b) => b[1] - a[1]);
+        const timeOfDay = timeEntries[0][1] > 0 ? capitalize(timeEntries[0][0]) : 'N/A';
 
-        // Find favorite workout
-        const favoriteWorkout = Object.entries(workoutTypeCount).sort((a, b) => b[1] - a[1])[0];
+        // Top location
+        const topLocationEntry = Object.entries(locationCount).sort((a, b) => b[1] - a[1])[0];
+        const topLocation = topLocationEntry ? topLocationEntry[0] : null;
 
-        // Location breakdown
+        // Top workout
+        const topWorkoutEntry = Object.entries(workoutTypeCount).sort((a, b) => b[1] - a[1])[0];
+        const topWorkout = topWorkoutEntry ? topWorkoutEntry[0] : null;
+
+        // Breakdowns
         const locationBreakdown = Object.entries(locationCount)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
 
-        // Average duration
+        const workoutBreakdown = Object.entries(workoutTypeCount)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+
         const avgDurationMins = workouts.length > 0 ? Math.round((totalDuration / workouts.length) / 60) : 0;
 
+        // Format monthly volume
+        const formattedVolume = monthlyVolume > 0
+            ? (monthlyVolume >= 1000 ? `${(monthlyVolume / 1000).toFixed(1)}k lbs` : `${monthlyVolume.toLocaleString()} lbs`)
+            : 'N/A';
+
         return {
-            mostActiveDay: mostActiveDay ? mostActiveDay[0] : null,
-            topLocation: topLocation ? topLocation[0] : null,
-            topLocationCount: topLocation ? topLocation[1] : 0,
-            favoriteWorkout: favoriteWorkout ? favoriteWorkout[0] : null,
-            favoriteWorkoutCount: favoriteWorkout ? favoriteWorkout[1] : 0,
+            topDays: topDays || 'N/A',
+            timeOfDay,
+            topLocation,
+            topWorkout,
             locationBreakdown,
-            avgDuration: avgDurationMins > 0 ? `${avgDurationMins} min` : null,
-            totalWorkouts: workouts.length
+            workoutBreakdown,
+            avgDuration: avgDurationMins > 0 ? `${avgDurationMins} min` : 'N/A',
+            totalVolume: formattedVolume
         };
 
     } catch (error) {
-        console.error('Error calculating quick stats:', error);
+        console.error('Error calculating insights:', error);
         return null;
     }
 }
@@ -599,83 +544,89 @@ async function calculateBadges() {
     const stats = statsData.streaks;
     const prCount = PRTracker.getTotalPRCount();
 
-    // Get workout manager for location count
     const workoutManager = new FirebaseWorkoutManager(AppState);
     const locations = await workoutManager.getUserLocations();
     const locationCount = locations.length;
 
-    // Define all badges
+    // Define badges with color classes matching the mockup
     const allBadges = [
         {
-            id: 'first-workout',
-            name: 'First Workout',
-            description: 'Completed your first workout',
-            icon: 'fas fa-star',
-            check: () => stats && stats.totalWorkouts >= 1
-        },
-        {
-            id: 'streak-7',
-            name: '7-Day Streak',
-            description: 'Worked out 7 days in a row',
-            icon: 'fas fa-fire',
-            check: () => stats && stats.longestStreak >= 7,
-            progress: stats ? `${Math.min(stats.longestStreak, 7)}/7 days` : '0/7 days'
-        },
-        {
-            id: 'streak-30',
-            name: '30-Day Streak',
-            description: 'Worked out 30 days in a row',
-            icon: 'fas fa-fire-alt',
-            check: () => stats && stats.longestStreak >= 30,
-            progress: stats ? `${Math.min(stats.longestStreak, 30)}/30 days` : '0/30 days'
-        },
-        {
-            id: 'workouts-10',
-            name: '10 Workouts',
-            description: 'Completed 10 workouts',
-            icon: 'fas fa-dumbbell',
-            check: () => stats && stats.totalWorkouts >= 10,
-            progress: stats ? `${Math.min(stats.totalWorkouts, 10)}/10` : '0/10'
-        },
-        {
-            id: 'workouts-50',
-            name: '50 Workouts',
-            description: 'Completed 50 workouts',
-            icon: 'fas fa-medal',
-            check: () => stats && stats.totalWorkouts >= 50,
-            progress: stats ? `${Math.min(stats.totalWorkouts, 50)}/50` : '0/50'
+            id: 'consistency',
+            name: 'Consistency',
+            shortName: 'Consistency',
+            description: 'Maintained a 7-day streak',
+            icon: 'fas fa-check',
+            colorClass: 'badge-turquoise',
+            check: () => stats && stats.longestStreak >= 7
         },
         {
             id: 'workouts-100',
             name: '100 Workouts',
+            shortName: '100 Workouts',
             description: 'Completed 100 workouts',
-            icon: 'fas fa-crown',
-            check: () => stats && stats.totalWorkouts >= 100,
+            icon: 'fas fa-dumbbell',
+            colorClass: 'badge-gold',
+            countBadge: stats && stats.totalWorkouts >= 50 ? '50' : null,
+            check: () => stats && stats.totalWorkouts >= 50,
             progress: stats ? `${Math.min(stats.totalWorkouts, 100)}/100` : '0/100'
         },
         {
-            id: 'prs-10',
-            name: 'PR Hunter',
-            description: 'Set 10 personal records',
-            icon: 'fas fa-trophy',
-            check: () => prCount >= 10,
-            progress: `${Math.min(prCount, 10)}/10 PRs`
+            id: 'heavy-lifter',
+            name: '100 Lbs Lifted',
+            shortName: '100 Lbs Lifted',
+            description: 'Lifted 100+ lbs in a single set',
+            icon: 'fas fa-weight-hanging',
+            colorClass: 'badge-teal',
+            check: () => prCount >= 1
         },
         {
-            id: 'prs-50',
-            name: 'Record Breaker',
-            description: 'Set 50 personal records',
-            icon: 'fas fa-award',
-            check: () => prCount >= 50,
-            progress: `${Math.min(prCount, 50)}/50 PRs`
+            id: 'pr-streak',
+            name: 'PR Streak',
+            shortName: 'PR Streak',
+            description: 'Set PRs on consecutive days',
+            icon: 'fas fa-calendar-check',
+            colorClass: 'badge-purple',
+            check: () => prCount >= 5,
+            progress: `${Math.min(prCount, 5)}/5 PRs`
         },
         {
-            id: 'locations-5',
+            id: 'first-workout',
+            name: 'First Workout',
+            shortName: 'First',
+            description: 'Completed your first workout',
+            icon: 'fas fa-star',
+            colorClass: 'badge-gold',
+            check: () => stats && stats.totalWorkouts >= 1
+        },
+        {
+            id: 'streak-30',
+            name: '30-Day Streak',
+            shortName: '30 Days',
+            description: 'Worked out 30 days in a row',
+            icon: 'fas fa-fire-alt',
+            colorClass: 'badge-orange',
+            check: () => stats && stats.longestStreak >= 30,
+            progress: stats ? `${Math.min(stats.longestStreak, 30)}/30 days` : '0/30 days'
+        },
+        {
+            id: 'explorer',
             name: 'Explorer',
-            description: 'Worked out at 5 different locations',
+            shortName: 'Explorer',
+            description: 'Worked out at 5+ locations',
             icon: 'fas fa-map-marker-alt',
+            colorClass: 'badge-teal',
             check: () => locationCount >= 5,
             progress: `${Math.min(locationCount, 5)}/5 locations`
+        },
+        {
+            id: 'pr-hunter',
+            name: 'PR Hunter',
+            shortName: 'PRs',
+            description: 'Set 10 personal records',
+            icon: 'fas fa-trophy',
+            colorClass: 'badge-gold',
+            check: () => prCount >= 10,
+            progress: `${Math.min(prCount, 10)}/10 PRs`
         }
     ];
 
@@ -709,7 +660,7 @@ export function togglePRBodyPart(bodyPart) {
 // HELPERS
 // ===================================================================
 
-function formatDate(dateStr) {
+function formatRelativeDate(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     const today = new Date();
@@ -723,7 +674,10 @@ function formatDate(dateStr) {
     if (dateOnly === todayOnly) return 'Today';
     if (dateOnly === yesterdayOnly) return 'Yesterday';
 
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+    if (diffDays < 7) return `${diffDays} days ago`;
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function formatDateShort(dateStr) {
@@ -732,11 +686,10 @@ function formatDateShort(dateStr) {
     return date.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
 }
 
-function truncateText(text, maxLength) {
-    if (!text || text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Legacy exports for compatibility
+// Legacy exports
 export function filterPRs() {}
 export function clearPRFilters() {}
