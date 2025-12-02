@@ -595,6 +595,12 @@ let manualEquipmentEditIndex = null;
 export async function openEquipmentPickerForManual(exerciseIndex) {
     manualEquipmentEditIndex = exerciseIndex;
 
+    // Get the exercise name for filtering
+    const exercise = manualWorkoutState.exercises[exerciseIndex];
+    if (!exercise) return;
+
+    const exerciseName = exercise.name;
+
     // Get the equipment picker modal
     const modal = document.getElementById('equipment-picker-modal');
     if (!modal) {
@@ -602,26 +608,29 @@ export async function openEquipmentPickerForManual(exerciseIndex) {
         return;
     }
 
-    // Load available equipment
+    // Load equipment for this specific exercise
     try {
         const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
-        const equipmentList = await workoutManager.getUserEquipment();
+        const equipmentList = await workoutManager.getEquipmentForExercise(exerciseName);
 
         const listContainer = document.getElementById('equipment-picker-list');
         if (listContainer) {
             if (equipmentList.length === 0) {
-                listContainer.innerHTML = '<p class="empty-state">No equipment saved yet</p>';
+                listContainer.innerHTML = `<p class="empty-state">No equipment saved for "${exerciseName}" yet.<br>Equipment is saved automatically when you log sets during a workout.</p>`;
             } else {
-                listContainer.innerHTML = equipmentList.map(eq => `
-                    <div class="equipment-picker-item" onclick="selectEquipmentForManual('${eq.id}', '${(eq.name || '').replace(/'/g, "\\'")}', '${(eq.location || '').replace(/'/g, "\\'")}')">
+                listContainer.innerHTML = equipmentList.map(eq => {
+                    // Get location from locations array or single location field
+                    const location = eq.locations?.length > 0 ? eq.locations[0] : (eq.location || '');
+                    return `
+                    <div class="equipment-picker-item" onclick="selectEquipmentForManual('${eq.id}', '${(eq.name || '').replace(/'/g, "\\'")}', '${(location || '').replace(/'/g, "\\'")}')">
                         <i class="fas fa-cog"></i>
                         <div class="equipment-info">
                             <span class="equipment-name">${eq.name || 'Unknown'}</span>
-                            ${eq.location ? `<span class="equipment-location">@ ${eq.location}</span>` : ''}
+                            ${location ? `<span class="equipment-location">@ ${location}</span>` : ''}
                         </div>
                     </div>
-                `).join('');
+                `}).join('');
             }
         }
 
