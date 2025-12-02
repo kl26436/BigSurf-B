@@ -171,25 +171,29 @@
             <!-- Dashboard -->
             <section id="dashboard" class="content-section hidden">
                 <!-- Resume Workout Card (only shown on dashboard) -->
-                <div id="resume-workout-banner" class="resume-workout-card hidden">
-                    <div class="resume-card-header">
-                        <i class="fas fa-play-circle"></i>
-                        <h3>Continue Your Workout?</h3>
+                <div id="resume-workout-banner" class="hidden">
+                    <div class="stats-section-header">
+                        <span class="stats-section-title">In Progress</span>
+                        <span id="resume-time-ago" class="resume-time-label">just now</span>
                     </div>
-                    <div class="resume-card-info">
-                        <span id="resume-workout-name" class="resume-workout-name">Custom: Thursday - Upper Body Pull</span>
-                        <div class="resume-workout-meta">
-                            <span><i class="fas fa-dumbbell"></i> <span id="resume-sets-completed">0/0</span> sets completed</span>
-                            <span><i class="fas fa-clock"></i> Started <span id="resume-time-ago">just now</span></span>
+                    <div class="resume-workout-card-new">
+                        <div class="resume-workout-info">
+                            <span id="resume-workout-name" class="resume-workout-name">Custom: Thursday - Upper Body Pull</span>
+                            <div class="resume-progress-container">
+                                <div class="resume-progress-bar">
+                                    <div id="resume-progress-fill" class="resume-progress-fill" style="width: 0%"></div>
+                                </div>
+                                <span id="resume-sets-completed" class="resume-progress-text">0/0 sets</span>
+                            </div>
                         </div>
-                    </div>
-                    <div class="resume-card-actions">
-                        <button class="btn btn-primary" onclick="continueInProgressWorkout()">
-                            <i class="fas fa-play"></i> Continue Workout
-                        </button>
-                        <button class="btn btn-secondary" onclick="discardInProgressWorkout()">
-                            <i class="fas fa-times"></i> Cancel Workout
-                        </button>
+                        <div class="resume-card-actions">
+                            <button class="resume-btn resume-btn-primary" onclick="continueInProgressWorkout()">
+                                Resume
+                            </button>
+                            <button class="resume-btn resume-btn-cancel" onclick="discardInProgressWorkout()">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div id="dashboard-content">

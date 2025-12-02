@@ -480,25 +480,32 @@ function showInProgressWorkoutPrompt(workoutData) {
             });
         }
         if (setsElement) {
-            setsElement.textContent = `${completedSets}/${totalSets}`;
+            setsElement.textContent = `${completedSets}/${totalSets} sets`;
         }
-        
+
+        // Update progress bar
+        const progressFill = document.getElementById('resume-progress-fill');
+        if (progressFill && totalSets > 0) {
+            const progressPercent = Math.min((completedSets / totalSets) * 100, 100);
+            progressFill.style.width = `${progressPercent}%`;
+        }
+
         // Calculate time ago
         if (timeElement && workoutData.startedAt) {
             const startTime = new Date(workoutData.startedAt);
             const now = new Date();
             const diffMs = now - startTime;
             const diffMins = Math.floor(diffMs / 60000);
-            
+
             let timeAgo;
             if (diffMins < 1) timeAgo = 'just now';
-            else if (diffMins < 60) timeAgo = `${diffMins}m ago`;
+            else if (diffMins < 60) timeAgo = `${diffMins} min ago`;
             else if (diffMins < 1440) timeAgo = `${Math.floor(diffMins / 60)}h ago`;
             else timeAgo = `${Math.floor(diffMins / 1440)}d ago`;
-            
+
             timeElement.textContent = timeAgo;
         }
-        
+
         // Show the card
         card.classList.remove('hidden');
         

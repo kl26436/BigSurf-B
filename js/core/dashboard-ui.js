@@ -162,7 +162,14 @@ async function checkForInProgressWorkout() {
                 }
 
                 if (setsElement) {
-                    setsElement.textContent = `${completedSets}/${totalSets}`;
+                    setsElement.textContent = `${completedSets}/${totalSets} sets`;
+                }
+
+                // Update progress bar
+                const progressFill = document.getElementById('resume-progress-fill');
+                if (progressFill && totalSets > 0) {
+                    const progressPercent = Math.min((completedSets / totalSets) * 100, 100);
+                    progressFill.style.width = `${progressPercent}%`;
                 }
 
                 // Calculate time ago
@@ -287,46 +294,44 @@ async function getTodaysCompletedWorkout() {
  */
 function renderWeeklyGoalSection(weekCount, weeklyGoal, weeklyStats) {
     const percentage = Math.min((weekCount / weeklyGoal) * 100, 100);
-    const circumference = 2 * Math.PI * 45; // radius = 45
+    const circumference = 2 * Math.PI * 36; // radius = 36 (smaller)
     const strokeDashoffset = circumference - (percentage / 100) * circumference;
     const isComplete = weekCount >= weeklyGoal;
     const remaining = Math.max(weeklyGoal - weekCount, 0);
 
     return `
-        <div class="weekly-goal-card">
-            <div class="weekly-goal-header">
-                <div class="weekly-goal-title">
-                    <i class="fas fa-bullseye"></i>
-                    <span>This Week's Goal</span>
-                </div>
-                <div class="weekly-goal-status ${isComplete ? 'complete' : ''}">
-                    ${isComplete ? '<i class="fas fa-check-circle"></i> Complete!' : `${remaining} to go`}
-                </div>
-            </div>
+        <div class="stats-section-header">
+            <span class="stats-section-title">This Week's Goal</span>
+            <span class="weekly-goal-status-inline ${isComplete ? 'complete' : ''}">
+                ${isComplete ? 'Complete!' : `${remaining} to go`}
+            </span>
+        </div>
+
+        <div class="weekly-goal-card compact">
             <div class="weekly-goal-content">
                 <div class="weekly-progress-ring-wrap">
-                    <svg class="weekly-progress-ring" width="100" height="100">
+                    <svg class="weekly-progress-ring" width="80" height="80">
                         <circle
                             class="ring-bg"
                             stroke="rgba(64, 224, 208, 0.15)"
-                            stroke-width="8"
+                            stroke-width="6"
                             fill="transparent"
-                            r="45"
-                            cx="50"
-                            cy="50"
+                            r="36"
+                            cx="40"
+                            cy="40"
                         />
                         <circle
                             class="ring-progress"
                             stroke="${isComplete ? '#4ade80' : 'var(--primary)'}"
-                            stroke-width="8"
+                            stroke-width="6"
                             fill="transparent"
-                            r="45"
-                            cx="50"
-                            cy="50"
+                            r="36"
+                            cx="40"
+                            cy="40"
                             stroke-linecap="round"
                             stroke-dasharray="${circumference}"
                             stroke-dashoffset="${strokeDashoffset}"
-                            transform="rotate(-90 50 50)"
+                            transform="rotate(-90 40 40)"
                         />
                     </svg>
                     <div class="ring-center-text">
@@ -481,6 +486,10 @@ function renderDashboardStreakBoxes(stats) {
     const streakData = stats || { currentStreak: 0, longestStreak: 0, totalWorkouts: 0 };
 
     return `
+        <div class="stats-section-header">
+            <span class="stats-section-title">Streaks</span>
+        </div>
+
         <div class="stats-streak-row">
             <div class="streak-box ${streakData.currentStreak > 0 ? 'active' : ''}">
                 <div class="streak-box-icon fire">
@@ -532,10 +541,7 @@ function renderDashboardInsightsSection(insights) {
             </div>
             <div class="insight-box">
                 <div class="insight-label">Most Used Location</div>
-                <div class="insight-value location">
-                    <i class="fas fa-map-marker-alt"></i>
-                    ${data.topLocation || 'N/A'}
-                </div>
+                <div class="insight-value">${data.topLocation || 'N/A'}</div>
             </div>
             <div class="insight-box">
                 <div class="insight-label">Most Used Workout</div>
@@ -1174,16 +1180,12 @@ function renderSuggestedWorkoutsNew(suggestedWorkouts, completedWorkoutTypes = [
     }).join('');
 
     return `
-        <div class="dashboard-section">
-            <div class="section-header">
-                <h3 class="section-title-new">
-                    <i class="fas fa-calendar-day"></i>
-                    ${dayName}
-                </h3>
-            </div>
-            <div class="suggested-list">
-                ${workoutCards}
-            </div>
+        <div class="stats-section-header">
+            <span class="stats-section-title">${dayName} Workouts</span>
+        </div>
+
+        <div class="suggested-list">
+            ${workoutCards}
         </div>
     `;
 }
