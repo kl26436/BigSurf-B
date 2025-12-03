@@ -165,13 +165,6 @@ async function checkForInProgressWorkout() {
                     setsElement.textContent = `${completedSets}/${totalSets} sets`;
                 }
 
-                // Update progress bar
-                const progressFill = document.getElementById('resume-progress-fill');
-                if (progressFill && totalSets > 0) {
-                    const progressPercent = Math.min((completedSets / totalSets) * 100, 100);
-                    progressFill.style.width = `${progressPercent}%`;
-                }
-
                 // Calculate time ago
                 if (timeElement) {
                     const minutesAgo = Math.floor(hoursSinceStart * 60);

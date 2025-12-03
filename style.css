@@ -3342,7 +3342,7 @@ body {
 }
 
 /* ===================================================================
-   RESUME WORKOUT CARD - Clean Dashboard Style
+   RESUME WORKOUT CARD - Clean PR-style design
    =================================================================== */
 
 .resume-time-label {
@@ -3350,81 +3350,87 @@ body {
     color: var(--text-secondary);
 }
 
-.resume-workout-card-new {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-.resume-workout-info {
-    margin-bottom: 0.75rem;
-}
-
-.resume-workout-name {
-    display: block;
-    font-size: 1rem;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.resume-progress-container {
+/* Main clickable card - matches PR item style */
+.resume-card {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-}
-
-.resume-progress-bar {
-    flex: 1;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.resume-progress-fill {
-    height: 100%;
-    background: var(--primary);
-    border-radius: 3px;
-    transition: width 0.3s ease;
-}
-
-.resume-progress-text {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
-}
-
-.resume-card-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.resume-btn {
-    flex: 1;
-    padding: 0.65rem 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: var(--bg-tertiary, #181f28);
+    border: 1px solid var(--border-color, #252f3a);
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all 0.2s ease;
 }
 
-.resume-btn:hover {
-    opacity: 0.9;
+.resume-card:hover {
+    border-color: var(--primary);
+    transform: translateX(4px);
 }
 
-.resume-btn-primary {
-    background: var(--primary);
-    color: var(--bg-primary);
+.resume-card-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    background: rgba(29, 211, 176, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
-.resume-btn-cancel {
-    background: rgba(255, 255, 255, 0.08);
+.resume-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.resume-card-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.125rem;
+}
+
+.resume-card-meta {
+    font-size: 0.86rem;
     color: var(--text-secondary);
+}
+
+.resume-card-arrow {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.resume-card:hover .resume-card-arrow {
+    color: var(--primary);
+    transform: translateX(2px);
+}
+
+/* Cancel button below card */
+.resume-cancel-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.75rem;
+}
+
+.resume-cancel-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.resume-cancel-btn:hover {
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
 }
 
 /* ===================================================================

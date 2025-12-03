@@ -176,24 +176,24 @@
                         <span class="stats-section-title">In Progress</span>
                         <span id="resume-time-ago" class="resume-time-label">just now</span>
                     </div>
-                    <div class="resume-workout-card-new">
-                        <div class="resume-workout-info">
-                            <span id="resume-workout-name" class="resume-workout-name">Custom: Thursday - Upper Body Pull</span>
-                            <div class="resume-progress-container">
-                                <div class="resume-progress-bar">
-                                    <div id="resume-progress-fill" class="resume-progress-fill" style="width: 0%"></div>
-                                </div>
-                                <span id="resume-sets-completed" class="resume-progress-text">0/0 sets</span>
+                    <div class="resume-card" onclick="continueInProgressWorkout()">
+                        <div class="resume-card-icon">
+                            <i class="fas fa-play-circle"></i>
+                        </div>
+                        <div class="resume-card-content">
+                            <div id="resume-workout-name" class="resume-card-name">Workout</div>
+                            <div class="resume-card-meta">
+                                <span id="resume-sets-completed">0/0 sets</span>
                             </div>
                         </div>
-                        <div class="resume-card-actions">
-                            <button class="resume-btn resume-btn-primary" onclick="continueInProgressWorkout()">
-                                Resume
-                            </button>
-                            <button class="resume-btn resume-btn-cancel" onclick="discardInProgressWorkout()">
-                                Cancel
-                            </button>
+                        <div class="resume-card-arrow">
+                            <i class="fas fa-chevron-right"></i>
                         </div>
+                    </div>
+                    <div class="resume-cancel-row">
+                        <button class="resume-cancel-btn" onclick="event.stopPropagation(); discardInProgressWorkout()">
+                            <i class="fas fa-times"></i> Cancel Workout
+                        </button>
                     </div>
                 </div>
                 <div id="dashboard-content">
