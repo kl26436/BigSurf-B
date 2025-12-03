@@ -196,9 +196,17 @@ async function checkForInProgressWorkout() {
                     }
                 }
                 if (statRest) {
-                    // Rest timer shows "--" on dashboard since workout isn't actively running
-                    // The live countdown updates when workout is active
-                    statRest.textContent = '--';
+                    // Check if there's an active rest timer in AppState
+                    if (AppState.activeRestTimer && !AppState.activeRestTimer.completed) {
+                        const { startTime, pausedTime, duration, isPaused } = AppState.activeRestTimer;
+                        const elapsed = isPaused ? 0 : Math.floor((Date.now() - startTime - pausedTime) / 1000);
+                        const timeLeft = Math.max(0, duration - elapsed);
+                        statRest.textContent = `${timeLeft}s`;
+                    } else if (AppState.activeRestTimer?.completed) {
+                        statRest.textContent = 'Go!';
+                    } else {
+                        statRest.textContent = '--';
+                    }
                 }
 
                 // Calculate time ago for header

@@ -103,6 +103,10 @@ function showActiveWorkout() {
     if (activeWorkout) {
         activeWorkout.classList.remove('hidden');
     }
+    // Active workout should hide bottom nav and header
+    setBottomNavVisible(false);
+    const { setHeaderMode } = window;
+    if (setHeaderMode) setHeaderMode(false);
 }
 
 function showWorkoutSelector() {

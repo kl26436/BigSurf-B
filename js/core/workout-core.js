@@ -1471,11 +1471,21 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
         const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
         timeLeft = Math.max(0, duration - elapsed);
 
+        // Update stored timeLeft so save/restore works correctly
+        if (modalTimer.timerData) {
+            modalTimer.timerData.timeLeft = timeLeft;
+        }
+
         updateDisplay();
 
         if (timeLeft === 0) {
             timerDisplay.textContent = 'Ready!';
             timerDisplay.style.color = 'var(--success)';
+
+            // Mark timer as completed in AppState (but don't clear - shows "Ready" on dashboard)
+            if (AppState.activeRestTimer) {
+                AppState.activeRestTimer.completed = true;
+            }
 
             // Vibration
             if ('vibrate' in navigator) {
@@ -1493,9 +1503,9 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
             return;
         }
     };
-    
+
     updateDisplay();
-    
+
     const timerLoop = () => {
         checkTime();
         if (timeLeft > 0) {
@@ -1509,7 +1519,8 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
         isPaused: isPaused,
         startTime: startTime,
         pausedTime: pausedTime,
-        
+        duration: duration,
+
         pause: () => {
             isPaused = !isPaused;
             if (isPaused) {
@@ -1517,14 +1528,19 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
             } else {
                 startTime = Date.now();
             }
-            
+
+            // Update AppState for dashboard display
+            if (AppState.activeRestTimer) {
+                AppState.activeRestTimer.isPaused = isPaused;
+            }
+
             const pauseBtn = modalTimer.querySelector('.modal-rest-controls .btn:first-child');
             if (pauseBtn) {
-                pauseBtn.innerHTML = isPaused ? 
+                pauseBtn.innerHTML = isPaused ?
                     '<i class="fas fa-play"></i>' : '<i class="fas fa-pause"></i>';
             }
         },
-        
+
         skip: () => {
             if (modalTimer.timerData.animationFrame) {
                 cancelAnimationFrame(modalTimer.timerData.animationFrame);
@@ -1533,9 +1549,22 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
             timerDisplay.style.color = '#000000';
             modalTimer.timerData = null;
 
+            // Clear AppState timer
+            AppState.activeRestTimer = null;
+
             // Cancel the server-side scheduled notification
             cancelRestNotification().catch(() => {});
         }
+    };
+
+    // Store timer state in AppState for dashboard display
+    AppState.activeRestTimer = {
+        exerciseIndex,
+        exerciseName: exercise.machine,
+        duration,
+        startTime,
+        pausedTime,
+        isPaused: false
     };
 
     // Request notification permission if not granted
@@ -1553,6 +1582,9 @@ function clearModalRestTimer(exerciseIndex) {
             cancelAnimationFrame(modalTimer.timerData.animationFrame);
         }
         modalTimer.timerData = null;
+
+        // Clear AppState timer
+        AppState.activeRestTimer = null;
 
         // Cancel the server-side scheduled notification
         cancelRestNotification().catch(() => {});
@@ -1600,12 +1632,17 @@ function restoreModalRestTimer(exerciseIndex, timerState) {
     
     const checkTime = () => {
         if (isPaused) return;
-        
+
         const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
         timeLeft = Math.max(0, timerState.timeLeft - elapsed);
-        
+
+        // Update stored timeLeft so save/restore works correctly
+        if (modalTimer.timerData) {
+            modalTimer.timerData.timeLeft = timeLeft;
+        }
+
         updateDisplay();
-        
+
         if (timeLeft === 0) {
             timerDisplay.textContent = 'Ready!';
             timerDisplay.style.color = 'var(--success)';
