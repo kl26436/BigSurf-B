@@ -166,29 +166,18 @@ async function checkForInProgressWorkout() {
                     });
                 }
 
-                // Update progress ring
+                // Update progress bar
                 const percentage = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
-                const circumference = 2 * Math.PI * 36; // radius = 36
-                const strokeDashoffset = circumference - (percentage / 100) * circumference;
-
-                const ringProgress = document.getElementById('resume-ring-progress');
-                const ringCount = document.getElementById('resume-ring-count');
-                const ringTotal = document.getElementById('resume-ring-total');
-
-                if (ringProgress) {
-                    ringProgress.style.strokeDashoffset = strokeDashoffset;
-                }
-                if (ringCount) {
-                    ringCount.textContent = completedSets;
-                }
-                if (ringTotal) {
-                    ringTotal.textContent = `/ ${totalSets}`;
+                const progressBar = document.getElementById('resume-progress-bar');
+                if (progressBar) {
+                    progressBar.style.width = `${percentage}%`;
                 }
 
                 // Update stat boxes
                 const statSets = document.getElementById('resume-stat-sets');
                 const statExercises = document.getElementById('resume-stat-exercises');
                 const statTime = document.getElementById('resume-stat-time');
+                const statRest = document.getElementById('resume-stat-rest');
 
                 if (statSets) {
                     statSets.textContent = `${completedSets}/${totalSets}`;
@@ -205,6 +194,11 @@ async function checkForInProgressWorkout() {
                         const mins = minutes % 60;
                         statTime.textContent = `${hours}h ${mins}m`;
                     }
+                }
+                if (statRest) {
+                    // Rest timer shows "--" on dashboard since workout isn't actively running
+                    // The live countdown updates when workout is active
+                    statRest.textContent = '--';
                 }
 
                 // Calculate time ago for header
