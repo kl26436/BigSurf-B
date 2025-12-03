@@ -249,9 +249,8 @@ async function renderDashboard() {
         const inProgressWorkoutType = inProgressWorkout?.workoutType || null;
 
         // Build the unified dashboard with stats page layout
-        // In-progress workout at TOP with its own section
+        // Note: In-progress workout is shown via resume-workout-banner in HTML, not here
         container.innerHTML = `
-            ${inProgressWorkout ? renderInProgressSection(inProgressWorkout) : ''}
             ${renderWeeklyGoalSection(weekCount, weeklyGoal, weeklyStats)}
             ${renderSuggestedWorkoutsNew(suggestedWorkouts, completedWorkoutTypes, inProgressWorkoutType)}
             ${renderDashboardStreakBoxes(streaks)}
