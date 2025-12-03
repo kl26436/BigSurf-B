@@ -82,6 +82,65 @@ body {
 }
 
 /* ============================================================================
+   1.5. BASE COMPONENT PATTERNS
+   ============================================================================ */
+
+/* Elevated Card - Base pattern for all cards with dark gradient + teal accent
+   Usage: Add .card-elevated to any card container, optionally with modifiers:
+   - .card-elevated--accent-top: Adds teal top border accent
+   - .card-elevated--clickable: Adds hover states for interactive cards
+   - .card-elevated--completed: Green accent for completed items
+*/
+.card-elevated {
+    background: linear-gradient(135deg, rgba(30, 35, 42, 0.95) 0%, rgba(20, 24, 30, 0.98) 100%);
+    border: none;
+    border-radius: var(--radius);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+    transition: all 0.2s ease;
+}
+
+.card-elevated--accent-top {
+    border-top: 3px solid rgba(64, 224, 208, 0.85);
+}
+
+.card-elevated--clickable {
+    cursor: pointer;
+}
+
+.card-elevated--clickable:hover {
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+}
+
+.card-elevated--completed {
+    border-top: 3px solid var(--success);
+    background: linear-gradient(135deg, rgba(35, 134, 54, 0.15) 0%, rgba(20, 24, 30, 0.98) 100%);
+}
+
+/* Stat Box - Consistent styling for stat display boxes */
+.stat-box {
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-box__value {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-box__label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-top: 0.125rem;
+}
+
+/* ============================================================================
    2. LAYOUT & STRUCTURE
    ============================================================================ */
 
@@ -3282,56 +3341,7 @@ body {
     display: inline-block;
 }
 
-/* ==================== Location Selector ==================== */
-.saved-locations-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.location-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem;
-    background: var(--bg-secondary);
-    border: 2px solid var(--border);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.location-option:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--primary);
-}
-
-.location-option.active {
-    background: rgba(64, 224, 208, 0.1);
-    border-color: var(--primary);
-}
-
-.location-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.location-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.location-meta {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-}
-
-.location-icon {
-    font-size: 1.5rem;
-    color: var(--primary);
-}
+/* NOTE: .location-option styles are defined in the Location Picker Modal section below */
 
 /* Mobile responsive */
 @media (max-width: 768px) {
@@ -3350,12 +3360,13 @@ body {
     color: var(--text-secondary);
 }
 
-/* Main clickable card - matches weekly goal card */
+/* Main clickable card - extends .card-elevated base pattern */
 .resume-goal-card {
+    /* Inherits: background gradient, border-radius, box-shadow from .card-elevated */
     background: linear-gradient(135deg, rgba(30, 35, 42, 0.95) 0%, rgba(20, 24, 30, 0.98) 100%);
     border: none;
     border-top: 3px solid rgba(64, 224, 208, 0.85);
-    border-radius: 14px;
+    border-radius: var(--radius);
     padding: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -3413,11 +3424,12 @@ body {
     gap: 0.5rem;
 }
 
+/* Stat boxes - matches .stat-box base pattern */
 .resume-stat-box {
     text-align: center;
     padding: 0.75rem 0.5rem;
     background: rgba(255, 255, 255, 0.03);
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
 

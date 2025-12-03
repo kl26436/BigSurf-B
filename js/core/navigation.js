@@ -189,7 +189,7 @@ export function bottomNavTo(tab) {
     }
 }
 
-// Update bottom nav active state
+// Update bottom nav active state with ARIA
 export function updateBottomNavActive(tab) {
     const bottomNav = document.getElementById('bottom-nav');
     if (!bottomNav) return;
@@ -197,21 +197,29 @@ export function updateBottomNavActive(tab) {
     bottomNav.querySelectorAll('.bottom-nav-item').forEach(item => {
         if (item.dataset.tab === tab) {
             item.classList.add('active');
+            item.setAttribute('aria-current', 'page');
         } else {
             item.classList.remove('active');
+            item.removeAttribute('aria-current');
         }
     });
 }
 
-// Toggle more menu visibility
+// Toggle more menu visibility with ARIA
 export function toggleMoreMenu() {
     const menu = document.getElementById('more-menu');
     const overlay = document.getElementById('more-menu-overlay');
+    const moreBtn = document.querySelector('[data-tab="more"]');
 
     if (menu && overlay) {
         const isHidden = menu.classList.contains('hidden');
         menu.classList.toggle('hidden', !isHidden);
         overlay.classList.toggle('hidden', !isHidden);
+
+        // Update ARIA state
+        if (moreBtn) {
+            moreBtn.setAttribute('aria-expanded', !isHidden);
+        }
     }
 }
 

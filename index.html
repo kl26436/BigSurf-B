@@ -60,56 +60,56 @@
 
     <div class="app-container">
         <!-- Sidebar Navigation -->
-        <nav id="sidebar" class="sidebar">
+        <nav id="sidebar" class="sidebar" role="navigation" aria-label="Main navigation">
             <div class="sidebar-header">
                 <h2>Big Surf</h2>
-                <button class="sidebar-close" onclick="closeSidebar()">
-                    <i class="fas fa-times"></i>
+                <button class="sidebar-close" onclick="closeSidebar()" aria-label="Close menu">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
 
-            <ul class="sidebar-menu">
-                <li>
-                    <a href="#" onclick="navigateTo('dashboard'); return false;">
-                        <i class="fas fa-home"></i>
+            <ul class="sidebar-menu" role="menu">
+                <li role="menuitem">
+                    <a href="#" data-route="dashboard" onclick="navigateTo('dashboard'); return false;">
+                        <i class="fas fa-home" aria-hidden="true"></i>
                         <span>Dashboard</span>
                     </a>
                 </li>
-                <li>
-                    <a href="#" onclick="navigateTo('start-workout'); return false;">
-                        <i class="fas fa-dumbbell"></i>
+                <li role="menuitem">
+                    <a href="#" data-route="start-workout" onclick="navigateTo('start-workout'); return false;">
+                        <i class="fas fa-dumbbell" aria-hidden="true"></i>
                         <span>Start Workout</span>
                     </a>
                 </li>
-                <li>
-                    <a href="#" onclick="navigateTo('stats'); return false;">
-                        <i class="fas fa-chart-line"></i>
+                <li role="menuitem">
+                    <a href="#" data-route="stats" onclick="navigateTo('stats'); return false;">
+                        <i class="fas fa-chart-line" aria-hidden="true"></i>
                         <span>Stats & Records</span>
                     </a>
                 </li>
-                <li>
-                    <a href="#" onclick="navigateTo('history'); return false;">
-                        <i class="fas fa-history"></i>
+                <li role="menuitem">
+                    <a href="#" data-route="history" onclick="navigateTo('history'); return false;">
+                        <i class="fas fa-history" aria-hidden="true"></i>
                         <span>Workout History</span>
                     </a>
                 </li>
-                <li class="sidebar-divider"></li>
-                <li class="sidebar-section-title">Settings</li>
-                <li>
-                    <a href="#" onclick="navigateTo('location'); return false;">
-                        <i class="fas fa-map-marker-alt"></i>
+                <li class="sidebar-divider" role="separator"></li>
+                <li class="sidebar-section-title" role="presentation">Settings</li>
+                <li role="menuitem">
+                    <a href="#" data-route="location" onclick="navigateTo('location'); return false;">
+                        <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
                         <span>Manage Locations</span>
                     </a>
                 </li>
-                <li>
-                    <a href="#" onclick="navigateTo('exercises'); return false;">
-                        <i class="fas fa-list"></i>
+                <li role="menuitem">
+                    <a href="#" data-route="exercises" onclick="navigateTo('exercises'); return false;">
+                        <i class="fas fa-list" aria-hidden="true"></i>
                         <span>Exercise Library</span>
                     </a>
                 </li>
-                <li>
-                    <a href="#" onclick="navigateTo('templates'); return false;">
-                        <i class="fas fa-dumbbell"></i>
+                <li role="menuitem">
+                    <a href="#" data-route="templates" onclick="navigateTo('templates'); return false;">
+                        <i class="fas fa-dumbbell" aria-hidden="true"></i>
                         <span>Workout Library</span>
                     </a>
                 </li>
@@ -1278,21 +1278,21 @@
 </div>
 
     <!-- Bottom Navigation Bar -->
-    <nav id="bottom-nav" class="bottom-nav">
-        <button class="bottom-nav-item active" data-tab="dashboard" onclick="bottomNavTo('dashboard')">
-            <i class="fas fa-home"></i>
+    <nav id="bottom-nav" class="bottom-nav" role="navigation" aria-label="Quick navigation">
+        <button class="bottom-nav-item active" data-tab="dashboard" onclick="bottomNavTo('dashboard')" aria-current="page">
+            <i class="fas fa-home" aria-hidden="true"></i>
             <span>Dashboard</span>
         </button>
         <button class="bottom-nav-item" data-tab="workout" onclick="bottomNavTo('workout')">
-            <i class="fas fa-dumbbell"></i>
+            <i class="fas fa-dumbbell" aria-hidden="true"></i>
             <span>Workout</span>
         </button>
         <button class="bottom-nav-item" data-tab="history" onclick="bottomNavTo('history')">
-            <i class="fas fa-history"></i>
+            <i class="fas fa-history" aria-hidden="true"></i>
             <span>History</span>
         </button>
-        <button class="bottom-nav-item" data-tab="more" onclick="toggleMoreMenu()">
-            <i class="fas fa-ellipsis-h"></i>
+        <button class="bottom-nav-item" data-tab="more" onclick="toggleMoreMenu()" aria-expanded="false" aria-haspopup="true">
+            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
             <span>More</span>
         </button>
     </nav>

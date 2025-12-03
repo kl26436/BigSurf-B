@@ -323,6 +323,10 @@ export function continueInProgressWorkout() {
     const activeWorkout = document.getElementById('active-workout');
     if (activeWorkout) activeWorkout.classList.remove('hidden');
 
+    // Hide header and bottom nav for active workout
+    setHeaderMode(false);
+    setBottomNavVisible(false);
+
     // Set workout name in header
     const workoutNameElement = document.getElementById('current-workout-name');
     if (workoutNameElement) {
@@ -331,10 +335,10 @@ export function continueInProgressWorkout() {
 
     // Resume timer
     startWorkoutTimer();
-    
+
     // Render exercises
     renderExercises();
-    
+
     // Clear in-progress state
     // DON'T clear this - keep it so we can resume again if user navigates away
     // It will be cleared when workout is completed or cancelled
