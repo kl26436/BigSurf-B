@@ -457,6 +457,43 @@ localStorage.setItem('debug', 'firebase:*');
   - [stats-tracker.js](js/core/stats-tracker.js) - `getWeeklyStats()`, filtered PRs to 5+ reps only
   - [style.css](style.css) - Hero card, progress ring, streak card, PRs card, suggested workouts, resume banner styles
 
+### v4.44: UI Standardization & Polish (2025-12-03)
+- **Standardized Page Headers**: All full-page sections now use consistent `.section-header-row` with icon + title + action button
+  - History: `fa-calendar-alt` + "Add Missing" button
+  - Locations: `fa-map-marker-alt` + "New" button
+  - Workout Library: `fa-clipboard-list` + "New" button
+  - Exercise Library: `fa-dumbbell` + "New" button
+  - Start Workout: `fa-play-circle` + "New" button
+- **Full-Page Overlay Sections**: Consolidated CSS for 6 overlay sections with standardized layout
+  - `padding: 16px`, `bottom: 70px` for nav, documented z-index hierarchy
+  - Sections: `#workout-history-section`, `#workout-selector`, `#location-management-section`, `#workout-management-section`, `#exercise-manager-section`, `#edit-exercise-section`
+- **Workout Library Redesign**: Category grid (like Exercise Library) + list view with workout cards
+  - Same icons as Start Workout page (push/pull/legs/cardio/other)
+  - `selectWorkoutCategory()`, `showWorkoutCategoryView()`, `handleWorkoutSearch()` functions
+- **Template Selection Modal**: Redesigned to match Workout Library style
+  - Uses `.workout-list-item` cards instead of inline styles
+  - Shows exercise summary and category icons
+- **Add Location Modal**: Proper modal UI instead of browser `prompt()`
+  - Clean form with input field and Cancel/Add buttons
+  - `detectAndAddLocation()`, `closeAddLocationModal()`, `saveNewLocationFromModal()` functions
+- **Edit Historical Workout**: Improved button labels and behavior
+  - "Cancel" → "Discard" (exits without saving, doesn't delete)
+  - "Finish" → "Save" (saves changes)
+  - `discardEditedWorkout()` function, `updateWorkoutButtonsForEditMode()` helper
+- **Removed Unnecessary Notifications**: Cleaned up popup spam
+  - No notification when entering edit mode
+  - No notification when selecting location on Locations page
+  - No confirmation when discarding edits
+- **Bottom Nav Touch Targets**: Increased padding and min-height for better mobile usability
+  - `env(safe-area-inset-bottom)` for iOS safe area
+- **Files**:
+  - [style-new.css](style-new.css) - Consolidated overlay section styles, modal styles
+  - [index.html](index.html) - Standardized headers, add-location-modal
+  - [workout-core.js](js/core/workout-core.js) - Edit mode buttons, discardEditedWorkout
+  - [workout-management-ui.js](js/core/workout/workout-management-ui.js) - Category navigation
+  - [location-ui.js](js/core/location-ui.js) - Modal-based location adding
+  - [main.js](js/main.js) - Template selection modal, new exports
+
 ### Key Technical Learnings
 
 1. **Deep vs Shallow Copy**: Always use deep clone for nested objects when modifications should not affect source
@@ -466,3 +503,4 @@ localStorage.setItem('debug', 'firebase:*');
 5. **iOS PWA Notifications**: Neither client-side setTimeout nor server-side push works reliably - iOS platform limitation
 6. **Cross-Module Callbacks**: Use `window` flags and callbacks for communication between modal systems (e.g., `editingFromTemplateEditor`)
 7. **SVG Progress Rings**: Use stroke-dasharray and stroke-dashoffset with circumference calculation for progress indicators
+8. **Standardized Page Layout**: Full-page overlay sections share common CSS (fixed positioning, padding, z-index) for consistency

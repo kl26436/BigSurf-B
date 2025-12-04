@@ -223,64 +223,28 @@
 
             <!-- Location Management -->
             <section id="location-management-section" class="content-section hidden">
-                <div class="edit-exercise-header">
-                    <button class="btn-back" onclick="closeLocationManagement()">
-                        <i class="fas fa-arrow-left"></i>
+                <div class="section-header-row">
+                    <h2 class="section-title"><i class="fas fa-map-marker-alt"></i> Locations</h2>
+                    <button class="btn btn-primary" onclick="detectAndAddLocation()">
+                        <i class="fas fa-plus"></i> New
                     </button>
-                    <h2>Manage Locations</h2>
-                    <div style="width: 80px;"></div>
                 </div>
 
                 <div class="location-management-content">
-                    <!-- Current Location -->
-                    <div class="current-location-card">
-                        <div class="current-location-label">Current Location</div>
-                        <div class="current-location-display">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span id="current-location-name">Not Set</span>
-                        </div>
-                    </div>
-
-                    <!-- Map View -->
-                    <div class="location-map-container" id="location-map-container">
-                        <div class="location-map-placeholder">
-                            <i class="fas fa-map-marked-alt"></i>
-                            <p>Location map</p>
-                            <p class="map-hint">GPS coordinates required to display map</p>
-                        </div>
-                    </div>
-
                     <!-- Saved Locations List -->
-                    <div class="location-list-header">
-                        <h3><i class="fas fa-list"></i> Saved Locations</h3>
-                        <span id="location-count" class="location-count">0 locations</span>
-                    </div>
                     <div id="location-management-list" class="location-management-list">
                         <!-- Populated dynamically -->
-                    </div>
-
-                    <!-- Add New Location -->
-                    <div class="add-location-form">
-                        <h4><i class="fas fa-plus-circle"></i> Add New Location</h4>
-                        <div class="add-location-inputs">
-                            <input type="text" id="new-location-name-input" class="input-field"
-                                   placeholder="Location name (e.g., LA Fitness Downtown)">
-                            <button type="button" class="btn btn-primary" onclick="addNewLocationFromManagement()">
-                                <i class="fas fa-plus"></i> Add
-                            </button>
-                        </div>
-                        <button type="button" class="btn btn-secondary btn-full" onclick="detectAndAddLocation()">
-                            <i class="fas fa-crosshairs"></i> Use Current GPS Location
-                        </button>
                     </div>
                 </div>
             </section>
 
             <!-- Workout Selector -->
-            <section id="workout-selector" class="content-section">
-                <div class="section-header">
-                    <h3>Choose Workout Type</h3>
-                    <p>Select a workout category, then choose your specific template</p>
+            <section id="workout-selector" class="content-section hidden">
+                <div class="section-header-row">
+                    <h2 class="section-title"><i class="fas fa-play-circle"></i> Start Workout</h2>
+                    <button class="btn btn-primary" onclick="createNewTemplate()">
+                        <i class="fas fa-plus"></i> New
+                    </button>
                 </div>
                              
                 <div class="workout-grid" id="workout-type-grid">
@@ -378,21 +342,23 @@
 
             <!-- Workout History -->
             <section id="workout-history-section" class="content-section hidden">
-                <!-- Calendar Header -->
-                <div class="calendar-header">
-                    <div class="calendar-title">
-                        <h1><i class="fas fa-calendar"></i> Workout Calendar</h1>
-                    </div>
+                <!-- Section Header (consistent with other pages) -->
+                <div class="section-header-row">
+                    <h2 class="section-title"><i class="fas fa-calendar-alt"></i> History</h2>
+                    <button class="btn btn-primary" onclick="showAddManualWorkoutModal()">
+                        <i class="fas fa-plus"></i> Add Missing
+                    </button>
+                </div>
 
-                    <div class="month-navigation">
-                        <button class="nav-button" onclick="previousMonth()">
-                            <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <div class="current-month" id="currentMonth"></div>
-                        <button class="nav-button" onclick="nextMonth()">
-                            <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
+                <!-- Month Navigation -->
+                <div class="month-navigation">
+                    <button class="nav-button" onclick="previousMonth()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="current-month" id="currentMonth"></div>
+                    <button class="nav-button" onclick="nextMonth()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
                 </div>
 
                 <!-- Calendar -->
@@ -411,30 +377,74 @@
                     </div>
                 </div>
 
-                <!-- Add Workout Button (below calendar) -->
-                <div class="calendar-actions">
-                    <button class="btn btn-primary" onclick="showAddManualWorkoutModal()">
-                        <i class="fas fa-plus"></i> Add Workout
-                    </button>
-                </div>
             </section>
 
             <!-- Workout Management Section (Full Page, not a modal) -->
             <section id="workout-management-section" class="content-section hidden">
-                <div class="section-content">
-                    <div class="section-header-row">
-                        <h2 class="section-title"><i class="fas fa-dumbbell"></i> Workout Library</h2>
-                        <button class="btn btn-primary" onclick="createNewTemplate()">
-                            <i class="fas fa-plus"></i> New
-                        </button>
-                    </div>
-                    <div class="section-body">
-                        <!-- All Templates (Unified List) -->
-                        <div class="template-categories">
-                            <div id="all-templates" class="template-grid">
-                                <!-- Populated by JavaScript -->
+                <!-- Section Header -->
+                <div class="section-header-row">
+                    <h2 class="section-title"><i class="fas fa-clipboard-list"></i> Workout Library</h2>
+                    <button class="btn btn-primary" onclick="createNewTemplate()">
+                        <i class="fas fa-plus"></i> New
+                    </button>
+                </div>
+
+                <!-- View 1: Category Grid (Entry Page) -->
+                <div id="workout-category-view" class="workout-library-view">
+                    <!-- Search -->
+                    <div class="exercise-library-header">
+                        <div class="exercise-search-row">
+                            <div class="exercise-search-wrapper full-width">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="workout-search-input" class="exercise-search-input"
+                                       placeholder="Search workouts"
+                                       oninput="handleWorkoutSearch()">
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Category Grid - uses icons from Start Workout page -->
+                    <div class="category-grid">
+                        <div class="category-card" onclick="selectWorkoutCategory('push')">
+                            <i class="fas fa-hand-paper category-icon"></i>
+                            <span class="category-name">Push</span>
+                        </div>
+                        <div class="category-card" onclick="selectWorkoutCategory('pull')">
+                            <i class="fas fa-fist-raised category-icon"></i>
+                            <span class="category-name">Pull</span>
+                        </div>
+                        <div class="category-card" onclick="selectWorkoutCategory('legs')">
+                            <i class="fas fa-running category-icon"></i>
+                            <span class="category-name">Legs</span>
+                        </div>
+                        <div class="category-card" onclick="selectWorkoutCategory('cardio')">
+                            <i class="fas fa-heartbeat category-icon"></i>
+                            <span class="category-name">Cardio</span>
+                        </div>
+                        <div class="category-card" onclick="selectWorkoutCategory('other')">
+                            <i class="fas fa-dumbbell category-icon"></i>
+                            <span class="category-name">Other</span>
+                        </div>
+                        <div class="category-card" onclick="selectWorkoutCategory('')">
+                            <i class="fas fa-th category-icon"></i>
+                            <span class="category-name">All</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- View 2: Workout List (After selecting category) -->
+                <div id="workout-list-view" class="workout-library-view hidden">
+                    <!-- Header with back and title -->
+                    <div class="exercise-list-header">
+                        <button class="btn-back-category" onclick="showWorkoutCategoryView()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <h2 id="workout-list-title" class="exercise-list-title">Workouts</h2>
+                    </div>
+
+                    <!-- Workout List -->
+                    <div id="all-templates" class="workout-list-container">
+                        <!-- Populated by JavaScript -->
                     </div>
                 </div>
             </section>
@@ -444,23 +454,18 @@
         <!-- Modal Containers -->
         <div id="modal-container">
             
-            <!-- Template Selection Modal -->
+            <!-- Template Selection Modal (Start Workout category picker) -->
             <div id="template-selection-modal" class="modal hidden">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h3 id="template-modal-title">Choose Template</h3>
+                        <h3 id="template-modal-title">Choose Workout</h3>
                         <button class="close-btn" onclick="closeTemplateSelection()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     <div class="modal-body">
-                        <div id="template-selection-grid" class="template-grid">
+                        <div id="template-selection-grid" class="workout-list-container">
                             <!-- Populated by JavaScript -->
-                        </div>
-                        <div class="modal-actions">
-                            <button class="btn btn-primary" onclick="createNewTemplate()">
-                                <i class="fas fa-plus"></i> Create New Template
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -530,6 +535,31 @@
                     </div>
                     <div class="modal-body" id="workout-detail-content">
                         <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Location Modal -->
+            <div id="add-location-modal" class="modal hidden">
+                <div class="modal-content modal-small">
+                    <div class="modal-header">
+                        <h3>Add New Location</h3>
+                        <button class="close-btn" onclick="closeAddLocationModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="modal-description">Enter a name for your current location. GPS coordinates will be saved automatically.</p>
+                        <div class="form-group">
+                            <input type="text" id="add-location-name-input" class="form-input"
+                                   placeholder="e.g., LA Fitness Downtown" autocomplete="off">
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn btn-secondary" onclick="closeAddLocationModal()">Cancel</button>
+                            <button class="btn btn-primary" onclick="saveNewLocationFromModal()">
+                                <i class="fas fa-plus"></i> Add Location
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

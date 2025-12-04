@@ -18,7 +18,7 @@ import {
 // Workout core functionality
 import {
     startWorkout, pauseWorkout, completeWorkout, cancelWorkout, cancelCurrentWorkout,
-    continueInProgressWorkout, discardInProgressWorkout, editHistoricalWorkout,
+    continueInProgressWorkout, discardInProgressWorkout, discardEditedWorkout, editHistoricalWorkout,
     renderExercises, createExerciseCard, focusExercise,
     updateSet, addSet, deleteSet, addSetToExercise, removeSetFromExercise,
     saveExerciseNotes, markExerciseComplete,
@@ -56,7 +56,8 @@ import {
     showCreateExerciseForm, closeCreateExerciseModal, createNewExercise,
     returnToWorkoutsFromManagement, editTemplate, deleteTemplate, resetToDefault,
     closeEquipmentPicker, skipEquipmentSelection, confirmEquipmentSelection, addEquipmentFromPicker,
-    closeTemplateExerciseEdit, saveTemplateExerciseEdit
+    closeTemplateExerciseEdit, saveTemplateExerciseEdit,
+    selectWorkoutCategory, showWorkoutCategoryView, handleWorkoutSearch
 } from './core/workout/workout-management-ui.js';
 
 // Manual workout functionality
@@ -95,6 +96,7 @@ import {
     changeLocation,
     showLocationManagement, closeLocationManagement,
     setLocationAsCurrent, addNewLocationFromManagement, detectAndAddLocation,
+    closeAddLocationModal, saveNewLocationFromModal,
     editLocationName, deleteLocation, showLocationOnMapById
 } from './core/location-ui.js';
 
@@ -184,6 +186,7 @@ window.cancelWorkout = cancelWorkout;
 window.cancelCurrentWorkout = cancelCurrentWorkout;
 window.continueInProgressWorkout = continueInProgressWorkout;
 window.discardInProgressWorkout = discardInProgressWorkout;
+window.discardEditedWorkout = discardEditedWorkout;
 window.editHistoricalWorkout = editHistoricalWorkout;
 window.startWorkoutFromModal = function(workoutName) {
     // Close the modal
@@ -324,6 +327,8 @@ window.setLocationAsCurrent = setLocationAsCurrent;
 window.showLocationOnMapById = showLocationOnMapById;
 window.addNewLocationFromManagement = addNewLocationFromManagement;
 window.detectAndAddLocation = detectAndAddLocation;
+window.closeAddLocationModal = closeAddLocationModal;
+window.saveNewLocationFromModal = saveNewLocationFromModal;
 window.editLocationName = editLocationName;
 window.deleteLocation = deleteLocation;
 
@@ -365,96 +370,100 @@ window.useTemplateFromManagement = useTemplateFromManagement;
 window.copyTemplateToCustom = copyTemplateToCustom;
 window.deleteCustomTemplate = deleteCustomTemplate;
 window.showTemplatesByCategory = function(category) {
-    // Fix: Match on workout.type OR workout.category
+    // Filter workouts by category
     const filteredWorkouts = window.AppState.workoutPlans.filter(workout => {
         const workoutCategory = (workout.category || workout.type || '').toLowerCase();
         return workoutCategory === category.toLowerCase();
     });
 
-    // Remove any existing modal first
-    const existingModal = document.getElementById('template-selection-modal');
-    if (existingModal) {
-        existingModal.remove();
+    // Get category icon
+    const categoryIcons = {
+        'push': 'fas fa-hand-paper',
+        'pull': 'fas fa-fist-raised',
+        'legs': 'fas fa-running',
+        'cardio': 'fas fa-heartbeat',
+        'other': 'fas fa-dumbbell'
+    };
+    const categoryIcon = categoryIcons[category.toLowerCase()] || 'fas fa-dumbbell';
+
+    // Use the existing modal in HTML
+    const modal = document.getElementById('template-selection-modal');
+    const titleEl = document.getElementById('template-modal-title');
+    const gridEl = document.getElementById('template-selection-grid');
+
+    if (!modal || !gridEl) return;
+
+    // Update title
+    const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
+    if (titleEl) {
+        titleEl.textContent = `${categoryDisplay} Workouts`;
     }
 
-    // Create completely new modal
-    const modal = document.createElement('div');
-    modal.id = 'template-selection-modal';
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-    `;
+    // Clear and populate grid with workout-list-item style cards
+    gridEl.innerHTML = '';
+    gridEl.className = 'workout-list-container';
 
-    const content = document.createElement('div');
-    content.style.cssText = `
-        background: #161b22;
-        border-radius: 16px;
-        padding: 2rem;
-        max-width: 90vw;
-        max-height: 90vh;
-        overflow-y: auto;
-        border: 1px solid #30363d;
-    `;
-
-    // Create header - capitalize first letter properly
-    const header = document.createElement('div');
-    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;';
-    const categoryDisplay = category.charAt(0).toUpperCase() + category.slice(1);
-    header.innerHTML = `
-        <h3 style="margin: 0; color: #c9d1d9;">${categoryDisplay} Workouts</h3>
-        <button onclick="closeTemplateModal()" style="background: none; border: none; color: #8b949e; font-size: 1.5rem; cursor: pointer;">×</button>
-    `;
-    
-    // Create cards container
-    const cardsContainer = document.createElement('div');
-    cardsContainer.className = 'template-grid';
-
-    // Add workout cards
-    filteredWorkouts.forEach(workout => {
-        const card = document.createElement('div');
-        card.className = 'workout-card';
-
-        // Use name or day field (some workouts use name, others use day)
-        const workoutName = workout.name || workout.day || 'Unnamed Workout';
-        const exerciseCount = workout.exercises?.length || 0;
-
-        card.innerHTML = `
-            <div class="workout-header">
-                <h3>${workoutName}</h3>
-            </div>
-            <div class="workout-preview">
-                <div class="exercise-count">${exerciseCount} exercises</div>
-            </div>
-            <div class="workout-actions">
-                <button class="btn btn-primary" onclick="startWorkoutFromModal('${workoutName}')">
-                    <i class="fas fa-play"></i> Start Workout
-                </button>
+    if (filteredWorkouts.length === 0) {
+        gridEl.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-dumbbell"></i>
+                <h3>No ${categoryDisplay} Workouts</h3>
+                <p>Create a workout to get started.</p>
             </div>
         `;
+    } else {
+        filteredWorkouts.forEach(workout => {
+            const workoutName = workout.name || workout.day || 'Unnamed Workout';
+            const exerciseCount = workout.exercises?.length || 0;
 
-        cardsContainer.appendChild(card);
-    });
-    
-    // Assemble modal
-    content.appendChild(header);
-    content.appendChild(cardsContainer);
-    modal.appendChild(content);
-    document.body.appendChild(modal);
-    };
-    window.closeTemplateModal = function() {
-        const modal = document.getElementById('template-selection-modal');
-        if (modal) {
-            modal.remove();
-        }
-    };
+            // Create exercise summary
+            let exerciseSummary = 'No exercises';
+            if (exerciseCount > 0) {
+                const names = workout.exercises.slice(0, 3).map(ex => ex.name || ex.machine);
+                exerciseSummary = names.join(', ');
+                if (exerciseCount > 3) {
+                    exerciseSummary += ` +${exerciseCount - 3} more`;
+                }
+            }
+
+            const card = document.createElement('div');
+            card.className = 'workout-list-item';
+            card.innerHTML = `
+                <div class="workout-item-icon">
+                    <i class="${categoryIcon}"></i>
+                </div>
+                <div class="workout-item-content">
+                    <div class="workout-item-name">${workoutName}</div>
+                    <div class="workout-item-meta">${exerciseCount} exercises</div>
+                    <div class="workout-item-exercises">${exerciseSummary}</div>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); startWorkoutFromModal('${workoutName.replace(/'/g, "\\'")}')">
+                    <i class="fas fa-play"></i> Start
+                </button>
+            `;
+
+            card.addEventListener('click', () => {
+                startWorkoutFromModal(workoutName);
+            });
+
+            gridEl.appendChild(card);
+        });
+    }
+
+    // Show the modal
+    modal.classList.remove('hidden');
+};
+
+window.closeTemplateModal = function() {
+    const modal = document.getElementById('template-selection-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+};
+
+window.closeTemplateSelection = function() {
+    closeTemplateModal();
+};
 
 // Workout History Functions
 window.showWorkoutHistory = showWorkoutHistory;
@@ -497,6 +506,9 @@ window.confirmEquipmentSelection = confirmEquipmentSelection;
 window.addEquipmentFromPicker = addEquipmentFromPicker;
 window.closeTemplateExerciseEdit = closeTemplateExerciseEdit;
 window.saveTemplateExerciseEdit = saveTemplateExerciseEdit;
+window.selectWorkoutCategory = selectWorkoutCategory;
+window.showWorkoutCategoryView = showWorkoutCategoryView;
+window.handleWorkoutSearch = handleWorkoutSearch;
 
 // Authentication Functions
 window.signIn = signIn;

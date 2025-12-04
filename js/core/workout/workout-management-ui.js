@@ -9,6 +9,8 @@ let workoutManager;
 let currentEditingTemplate = null;
 let exerciseLibrary = [];
 let filteredExercises = [];
+let allWorkoutTemplates = [];
+let currentWorkoutCategory = '';
 
 export function initializeWorkoutManagement(appState) {
     workoutManager = new FirebaseWorkoutManager(appState);
@@ -49,10 +51,11 @@ export async function showWorkoutManagement() {
     // Keep bottom nav visible for consistency
     setBottomNavVisible(true);
 
-    // Load all templates (unified list)
-    setTimeout(() => {
-        loadAllTemplates();
-    }, 100);
+    // Show category view, hide list view
+    showWorkoutCategoryView();
+
+    // Preload templates in background
+    loadAllTemplatesInBackground();
 }
 
 export function closeWorkoutManagement() {
@@ -118,100 +121,182 @@ async function loadWorkoutTemplates() {
     }
 }
 
-// Load all templates in a unified list (both default and custom)
-async function loadAllTemplates() {
-    const container = document.getElementById('all-templates');
-    if (!container) return;
-
-    container.innerHTML = '<div class="loading"><div class="spinner"></div><span>Loading templates...</span></div>';
-
+// Preload all templates in background
+async function loadAllTemplatesInBackground() {
     try {
-        // Load all templates (Firebase manager filters out hidden defaults)
-        const templates = await workoutManager.getUserWorkoutTemplates();
-
-        if (templates.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-dumbbell"></i>
-                    <h3>No Workouts Available</h3>
-                    <p>Create your first workout to get started.</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = '';
-        templates.forEach(template => {
-            const card = createTemplateCard(template);
-            container.appendChild(card);
-        });
-
+        allWorkoutTemplates = await workoutManager.getUserWorkoutTemplates();
     } catch (error) {
-        console.error('❌ Error loading templates:', error);
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3>Error Loading Templates</h3>
-                <p>Please try again later.</p>
-            </div>
-        `;
+        console.error('❌ Error preloading templates:', error);
     }
 }
 
+// Show category view (entry page)
+export function showWorkoutCategoryView() {
+    const categoryView = document.getElementById('workout-category-view');
+    const listView = document.getElementById('workout-list-view');
+
+    if (categoryView) categoryView.classList.remove('hidden');
+    if (listView) listView.classList.add('hidden');
+
+    currentWorkoutCategory = '';
+}
+
+// Select a workout category and show filtered list
+export async function selectWorkoutCategory(category) {
+    currentWorkoutCategory = category;
+
+    const categoryView = document.getElementById('workout-category-view');
+    const listView = document.getElementById('workout-list-view');
+    const titleEl = document.getElementById('workout-list-title');
+
+    if (categoryView) categoryView.classList.add('hidden');
+    if (listView) listView.classList.remove('hidden');
+
+    // Update title
+    if (titleEl) {
+        titleEl.textContent = category ? `${category} Workouts` : 'All Workouts';
+    }
+
+    // Render filtered templates
+    renderWorkoutList(category);
+}
+
+// Handle workout search from category view
+export function handleWorkoutSearch() {
+    const searchInput = document.getElementById('workout-search-input');
+    const query = searchInput?.value.trim().toLowerCase();
+
+    if (query && query.length >= 2) {
+        // Show list view with search results
+        selectWorkoutCategory('');
+
+        // Filter by search after showing
+        setTimeout(() => {
+            const container = document.getElementById('all-templates');
+            if (!container) return;
+
+            const filtered = allWorkoutTemplates.filter(t =>
+                t.name?.toLowerCase().includes(query) ||
+                t.exercises?.some(ex => (ex.name || ex.machine || '').toLowerCase().includes(query))
+            );
+
+            renderFilteredWorkouts(filtered, `Search: "${query}"`);
+        }, 50);
+    }
+}
+
+// Render workout list for a category
+function renderWorkoutList(category) {
+    const container = document.getElementById('all-templates');
+    if (!container) return;
+
+    // Filter templates by category
+    let filtered = allWorkoutTemplates;
+    if (category) {
+        filtered = allWorkoutTemplates.filter(t => {
+            const templateCategory = (t.category || t.type || 'other').toLowerCase();
+            const searchCategory = category.toLowerCase();
+            return templateCategory.includes(searchCategory) ||
+                   t.name?.toLowerCase().includes(searchCategory);
+        });
+    }
+
+    renderFilteredWorkouts(filtered);
+}
+
+// Render filtered workouts to container
+function renderFilteredWorkouts(templates, titleOverride = null) {
+    const container = document.getElementById('all-templates');
+    const titleEl = document.getElementById('workout-list-title');
+
+    if (!container) return;
+
+    if (titleOverride && titleEl) {
+        titleEl.textContent = titleOverride;
+    }
+
+    if (templates.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-dumbbell"></i>
+                <h3>No Workouts Found</h3>
+                <p>Create a workout to get started.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    templates.forEach(template => {
+        const card = createTemplateCard(template);
+        container.appendChild(card);
+    });
+}
+
+// Create a simple workout card (like exercise library)
 function createTemplateCard(template) {
     const card = document.createElement('div');
-    card.className = 'template-card';
+    card.className = 'workout-list-item';
 
     const exerciseCount = template.exercises?.length || 0;
     const isDefault = template.isDefault || false;
 
-    // Create full exercise list
-    let exerciseListHTML = '';
-    if (exerciseCount === 0) {
-        exerciseListHTML = '<div class="template-exercise-item">No exercises</div>';
-    } else {
-        exerciseListHTML = template.exercises.map((ex, index) => {
-            const sets = ex.sets || 3;
-            const reps = ex.reps || 10;
-            const weight = ex.weight || 50;
-            // Build equipment tag if equipment is specified
-            let equipmentTag = '';
-            if (ex.equipment) {
-                const equipmentText = ex.equipmentLocation
-                    ? `${ex.equipment} @ ${ex.equipmentLocation}`
-                    : ex.equipment;
-                equipmentTag = `<span class="template-exercise-equipment">${equipmentText}</span>`;
-            }
-            return `
-                <div class="template-exercise-item">
-                    <span class="exercise-number">${index + 1}.</span>
-                    <span class="exercise-name">${ex.name || ex.machine}</span>
-                    ${equipmentTag}
-                    <span class="exercise-details">${sets}×${reps} @ ${weight}lbs</span>
-                </div>
-            `;
-        }).join('');
+    // Get category icon
+    const categoryIcon = getCategoryIcon(template.category || template.type);
+
+    // Create exercise summary (just names, comma separated)
+    let exerciseSummary = 'No exercises';
+    if (exerciseCount > 0) {
+        const names = template.exercises.slice(0, 4).map(ex => ex.name || ex.machine);
+        exerciseSummary = names.join(', ');
+        if (exerciseCount > 4) {
+            exerciseSummary += ` +${exerciseCount - 4} more`;
+        }
     }
 
     card.innerHTML = `
-        <h4>${template.name}</h4>
-        <div class="template-exercises-list">
-            ${exerciseListHTML}
+        <div class="workout-item-icon">
+            <i class="${categoryIcon}"></i>
         </div>
-        <div class="template-actions">
-            <button class="btn btn-primary" onclick="useTemplate('${template.id}', ${isDefault})">
-                <i class="fas fa-play"></i> Use Today
-            </button>
-            <button class="btn btn-secondary" onclick="editTemplate('${template.id}', ${isDefault})" title="Edit">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button class="btn btn-danger" onclick="deleteTemplate('${template.id}', ${isDefault})" title="Delete">
-                <i class="fas fa-trash"></i>
-            </button>
+        <div class="workout-item-content">
+            <div class="workout-item-name">${template.name}</div>
+            <div class="workout-item-meta">${exerciseCount} exercises</div>
+            <div class="workout-item-exercises">${exerciseSummary}</div>
         </div>
+        <button class="workout-item-edit" onclick="event.stopPropagation(); editTemplate('${template.id}', ${isDefault})">
+            EDIT
+        </button>
     `;
 
+    // Click on card to use the workout
+    card.addEventListener('click', () => {
+        useTemplate(template.id, isDefault);
+    });
+
     return card;
+}
+
+// Get icon for workout category - matches Start Workout page icons
+function getCategoryIcon(category) {
+    const cat = (category || '').toLowerCase();
+    const icons = {
+        'push': 'fas fa-hand-paper',
+        'pull': 'fas fa-fist-raised',
+        'legs': 'fas fa-running',
+        'leg': 'fas fa-running',
+        'cardio': 'fas fa-heartbeat',
+        'core': 'fas fa-heartbeat',
+        'other': 'fas fa-dumbbell',
+        'full body': 'fas fa-dumbbell',
+        'fullbody': 'fas fa-dumbbell',
+        'upper': 'fas fa-hand-paper',
+        'lower': 'fas fa-running',
+        'chest': 'fas fa-hand-paper',
+        'back': 'fas fa-fist-raised',
+        'shoulders': 'fas fa-hand-paper',
+        'arms': 'fas fa-fist-raised'
+    };
+    return icons[cat] || 'fas fa-dumbbell';
 }
 
 export function createNewTemplate() {

@@ -271,14 +271,17 @@ export function updateLocationIndicator(locationName, locked = false) {
 
     if (!indicator) return;
 
+    // Always show the indicator (user can tap to set/change location)
+    indicator.classList.remove('hidden');
+
     if (locationName) {
-        indicator.classList.remove('hidden');
         if (nameSpan) nameSpan.textContent = locationName;
         if (lockIcon) {
             lockIcon.style.display = locked ? 'inline' : 'none';
         }
     } else {
-        indicator.classList.add('hidden');
+        if (nameSpan) nameSpan.textContent = 'Tap to set location';
+        if (lockIcon) lockIcon.style.display = 'none';
     }
 }
 

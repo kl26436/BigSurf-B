@@ -246,6 +246,9 @@ export async function completeWorkout() {
     window.editingWorkoutDate = null;
     window.editingWorkoutOriginalDuration = null;
 
+    // Reset buttons to normal mode
+    updateWorkoutButtonsForEditMode(false);
+
     // Show dashboard after completion
     const { showDashboard } = await import('./dashboard-ui.js');
     showDashboard();
@@ -275,6 +278,9 @@ export function cancelWorkout(skipConfirmation = false) {
     window.editingHistoricalWorkout = false;
     window.editingWorkoutDate = null;
     window.editingWorkoutOriginalDuration = null;
+
+    // Reset buttons to normal mode
+    updateWorkoutButtonsForEditMode(false);
 
     // Navigate to dashboard instead of legacy workout selector
     import('./navigation.js').then(({ navigateTo }) => {
@@ -479,7 +485,57 @@ export async function editHistoricalWorkout(dateStr) {
     const currentLocation = getSessionLocation();
     updateLocationIndicator(currentLocation, false);
 
-    showNotification('Editing workout - changes will save to original date', 'info');
+    // Update button labels for edit mode
+    updateWorkoutButtonsForEditMode(true);
+}
+
+/**
+ * Update workout action buttons for edit mode vs new workout mode
+ */
+function updateWorkoutButtonsForEditMode(isEditing) {
+    const cancelBtn = document.querySelector('.btn-workout-action.btn-cancel');
+    const finishBtn = document.querySelector('.btn-workout-action.btn-finish');
+
+    if (isEditing) {
+        // Edit mode: Cancel = discard edits, Finish = save changes
+        if (cancelBtn) {
+            cancelBtn.innerHTML = '<i class="fas fa-times"></i> Discard';
+            cancelBtn.onclick = discardEditedWorkout;
+        }
+        if (finishBtn) {
+            finishBtn.innerHTML = '<i class="fas fa-check"></i> Save';
+        }
+    } else {
+        // Normal mode: Cancel = cancel workout, Finish = complete workout
+        if (cancelBtn) {
+            cancelBtn.innerHTML = '<i class="fas fa-times"></i> Cancel';
+            cancelBtn.onclick = cancelWorkout;
+        }
+        if (finishBtn) {
+            finishBtn.innerHTML = '<i class="fas fa-check"></i> Finish';
+        }
+    }
+}
+
+/**
+ * Discard edits to a historical workout (don't delete, just exit without saving)
+ */
+export async function discardEditedWorkout() {
+    // Clear editing flags
+    window.editingHistoricalWorkout = false;
+    window.editingWorkoutDate = null;
+    window.editingWorkoutOriginalDuration = null;
+
+    // Reset buttons to normal mode
+    updateWorkoutButtonsForEditMode(false);
+
+    // Clear current workout state
+    AppState.currentWorkout = null;
+    AppState.savedData = {};
+
+    // Navigate back to history
+    const { navigateTo } = await import('./navigation.js');
+    navigateTo('history');
 }
 
 export async function discardInProgressWorkout() {

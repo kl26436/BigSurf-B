@@ -88,7 +88,6 @@ export async function showLocationManagement() {
                 setSessionLocation(matchedLocation.name);
                 updateCurrentLocationDisplay();
                 renderLocationManagementList(); // Re-render to show CURRENT badge
-                showNotification(`Detected: ${matchedLocation.name}`, 'success');
             }
         }
     } catch (error) {
@@ -299,7 +298,7 @@ export async function setLocationAsCurrent(locationName) {
         if (location.latitude && location.longitude) {
             showLocationOnMap(location.latitude, location.longitude, location.name);
         }
-        // If location has NO GPS coords but we have current GPS, offer to update
+        // If location has NO GPS coords but we have current GPS, silently update
         else if (window.currentGPSCoords) {
             try {
                 const manager = getWorkoutManager();
@@ -311,14 +310,12 @@ export async function setLocationAsCurrent(locationName) {
                 location.latitude = window.currentGPSCoords.latitude;
                 location.longitude = window.currentGPSCoords.longitude;
                 showLocationOnMap(location.latitude, location.longitude, location.name);
-                showNotification(`GPS saved for ${locationName}`, 'success');
             } catch (error) {
                 console.error('Error updating location GPS coords:', error);
             }
         }
     }
 
-    showNotification(`Location set to ${locationName}`, 'success');
     renderLocationManagementList();
     updateCurrentLocationDisplay();
 }
@@ -427,32 +424,71 @@ export async function addNewLocationFromManagement() {
 }
 
 /**
- * Detect GPS location and show on map
+ * Open the Add Location modal
  */
-export async function detectAndAddLocation() {
-    showNotification('Detecting location...', 'info');
+export function detectAndAddLocation() {
+    const modal = document.getElementById('add-location-modal');
+    const input = document.getElementById('add-location-name-input');
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        if (input) {
+            input.value = '';
+            setTimeout(() => input.focus(), 100);
+        }
+    }
+}
+
+/**
+ * Close the Add Location modal
+ */
+export function closeAddLocationModal() {
+    const modal = document.getElementById('add-location-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+/**
+ * Save new location from modal
+ */
+export async function saveNewLocationFromModal() {
+    const input = document.getElementById('add-location-name-input');
+    const locationName = input?.value?.trim();
+
+    if (!locationName) {
+        showNotification('Please enter a location name', 'warning');
+        return;
+    }
+
+    // Check if name already exists
+    if (cachedLocations.some(loc => loc.name.toLowerCase() === locationName.toLowerCase())) {
+        showNotification('A location with that name already exists', 'warning');
+        return;
+    }
 
     try {
         const coords = await getCurrentPosition();
 
-        if (!coords) {
-            showNotification('Could not get GPS location', 'error');
-            return;
-        }
+        // Save location with or without GPS
+        const manager = getWorkoutManager();
+        await manager.saveUserLocation({
+            name: locationName,
+            latitude: coords?.latitude || null,
+            longitude: coords?.longitude || null,
+            radius: 150,
+            visitCount: 0
+        });
 
-        // Store coords for map display
-        window.currentGPSCoords = coords;
-        updateLocationMap();
+        // Close modal and refresh list
+        closeAddLocationModal();
+        await loadLocations();
+        renderLocationManagementList();
 
-        // Focus the input for user to enter name
-        const input = document.getElementById('new-location-name-input');
-        if (input) {
-            input.focus();
-            showNotification('GPS detected! Enter a name for this location.', 'success');
-        }
+        showNotification(`Added ${locationName}`, 'success');
     } catch (error) {
-        console.error('Error detecting location:', error);
-        showNotification('Error detecting location', 'error');
+        console.error('Error adding location:', error);
+        showNotification('Error adding location', 'error');
     }
 }
 
