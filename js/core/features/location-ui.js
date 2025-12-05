@@ -526,22 +526,10 @@ export async function searchLocationAddress() {
     resultsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Searching...</div>';
 
     try {
-        // Use Nominatim (OpenStreetMap) for free geocoding
-        // Note: Don't set custom headers - they cause CORS issues in browsers
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`);
-
-        // Check if response is OK
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        let results;
-        try {
-            results = await response.json();
-        } catch (parseError) {
-            console.error('Invalid JSON response from Nominatim');
-            throw new Error('Invalid response from geocoding service');
-        }
+        // Use Firebase Cloud Function to bypass CORS restrictions
+        const geocodeFunc = httpsCallable(functions, 'geocodeAddress');
+        const response = await geocodeFunc({ query: query });
+        const results = response.data.results || [];
 
         if (!Array.isArray(results) || results.length === 0) {
             resultsContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">No results found. Try a different search.</div>';

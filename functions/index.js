@@ -375,6 +375,50 @@ exports.sendDueNativeNotifications = functions.pubsub
 // ============================================================================
 
 /**
+ * Forward geocode an address to get coordinates
+ * Uses OpenStreetMap Nominatim API (free, no API key required)
+ * Called from client to bypass CORS restrictions
+ */
+exports.geocodeAddress = functions.https.onCall(async (data, context) => {
+    const { query } = data;
+
+    if (!query) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing query');
+    }
+
+    return new Promise((resolve, reject) => {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+
+        const options = {
+            headers: {
+                'User-Agent': 'BigSurf-Workout-Tracker/1.0 (https://bigsurf.fit)'
+            }
+        };
+
+        https.get(url, options, (res) => {
+            let data = '';
+
+            res.on('data', (chunk) => {
+                data += chunk;
+            });
+
+            res.on('end', () => {
+                try {
+                    const results = JSON.parse(data);
+                    resolve({ results: results });
+                } catch (error) {
+                    console.error('❌ Error parsing geocode response:', error);
+                    resolve({ results: [] });
+                }
+            });
+        }).on('error', (error) => {
+            console.error('❌ Error calling Nominatim:', error);
+            resolve({ results: [] });
+        });
+    });
+});
+
+/**
  * Reverse geocode coordinates to get city and state
  * Uses OpenStreetMap Nominatim API (free, no API key required)
  * Called from client to bypass CORS restrictions
