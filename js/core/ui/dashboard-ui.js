@@ -329,7 +329,8 @@ async function renderDashboard() {
         await PRTracker.loadPRData();
         const recentPRs = PRTracker.getRecentPRs(3);
 
-        const weekCount = weeklyStats.workouts.length;
+        // Use uniqueDays to count workout days (not total workouts)
+        const weekCount = weeklyStats.uniqueDays || weeklyStats.workouts.length;
         const weeklyGoal = 5;
         const completedWorkoutTypes = todaysWorkout ? [todaysWorkout.workoutType] : [];
         const inProgressWorkoutType = inProgressWorkout?.workoutType || null;

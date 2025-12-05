@@ -191,7 +191,7 @@ export async function getLastWorkout() {
  * @returns {Promise<{sets: number, exercises: number, minutes: number, workouts: Array}>}
  */
 export async function getWeeklyStats() {
-    if (!AppState.currentUser) return { sets: 0, exercises: 0, minutes: 0, workouts: [] };
+    if (!AppState.currentUser) return { sets: 0, exercises: 0, minutes: 0, workouts: [], uniqueDays: 0 };
 
     try {
         const today = new Date();
@@ -210,6 +210,7 @@ export async function getWeeklyStats() {
 
         const snapshot = await getDocs(q);
         const workouts = [];
+        const workoutDays = new Set(); // Track unique days
         let totalSets = 0;
         let totalExercises = 0;
         let totalMinutes = 0;
@@ -220,7 +221,7 @@ export async function getWeeklyStats() {
             // Skip cancelled workouts
             if (data.cancelledAt) return;
 
-            // Count completed sets for this workout
+            // Count completed sets for this workout (for stats, not for counting days)
             let workoutSets = 0;
             let workoutExercises = 0;
 
@@ -234,13 +235,22 @@ export async function getWeeklyStats() {
                 });
             }
 
-            // Only count workouts with at least 1 completed set
-            if (workoutSets === 0) return;
-
+            // Add to workouts list (any completed workout counts)
             workouts.push({
                 id: doc.id,
                 ...data
             });
+
+            // Track unique workout days (use date string for deduplication)
+            // A completed workout counts as a workout day, regardless of sets logged
+            if (data.date) {
+                workoutDays.add(data.date);
+            } else if (data.completedAt) {
+                // Fallback: extract date from completedAt timestamp
+                const completedDate = new Date(data.completedAt);
+                const dateStr = completedDate.toISOString().split('T')[0];
+                workoutDays.add(dateStr);
+            }
 
             totalSets += workoutSets;
             totalExercises += workoutExercises;
@@ -255,11 +265,12 @@ export async function getWeeklyStats() {
             sets: totalSets,
             exercises: totalExercises,
             minutes: totalMinutes,
-            workouts
+            workouts,
+            uniqueDays: workoutDays.size // Count of unique days with workouts
         };
     } catch (error) {
         console.error('❌ Error getting weekly stats:', error);
-        return { sets: 0, exercises: 0, minutes: 0, workouts: [] };
+        return { sets: 0, exercises: 0, minutes: 0, workouts: [], uniqueDays: 0 };
     }
 }
 

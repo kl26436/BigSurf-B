@@ -535,6 +535,11 @@ async function populateLocationDatalist() {
     const datalist = document.getElementById('edit-equipment-location-list');
     if (!datalist) return;
 
+    // Ensure workoutManager is initialized
+    if (!workoutManager) {
+        workoutManager = new FirebaseWorkoutManager(AppState);
+    }
+
     try {
         // Get all user locations from Firebase
         const locations = await workoutManager.getUserLocations();
