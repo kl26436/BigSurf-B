@@ -2,8 +2,8 @@
 // Contains debugging functions and temporary fixes - easy to remove when issues are resolved
 
 import { AppState } from './app-state.js';
-import { showNotification } from './ui-helpers.js';
-import { loadExerciseHistory } from './data-manager.js';
+import { showNotification } from '../ui/ui-helpers.js';
+import { loadExerciseHistory } from '../data/data-manager.js';
 
 // ===================================================================
 // DEBUG FUNCTIONS
@@ -13,7 +13,7 @@ export function debugManualWorkoutDate() {
     console.log('🔍 DEBUGGING MANUAL WORKOUT DATE ISSUE:');
     
     // Get current manual workout from the manual workout module
-    const { getCurrentManualWorkout } = import('./manual-workout.js').then(module => {
+    const { getCurrentManualWorkout } = import('../features/manual-workout.js').then(module => {
         const currentManualWorkout = module.getCurrentManualWorkout();
         console.log('currentManualWorkout.date:', currentManualWorkout.date);
     });
@@ -42,7 +42,7 @@ export async function debugFirebaseWorkoutDates() {
     }
     
     try {
-        const { db, collection, getDocs } = await import('./firebase-config.js');
+        const { db, collection, getDocs } = await import('../data/firebase-config.js');
         
         const workoutsRef = collection(db, "users", AppState.currentUser.uid, "workouts");
         const querySnapshot = await getDocs(workoutsRef);
@@ -253,7 +253,7 @@ export async function debugFirebaseConnection() {
     console.log('🔍 Testing Firebase connection...');
     
     try {
-        const { db, doc, getDoc } = await import('./firebase-config.js');
+        const { db, doc, getDoc } = await import('../data/firebase-config.js');
         
         // Try to read a test document
         const testDoc = doc(db, 'test', 'connection');
@@ -277,7 +277,7 @@ export async function debugUserPermissions() {
     console.log('🔍 Testing user permissions...');
     
     try {
-        const { db, doc, setDoc, getDoc } = await import('./firebase-config.js');
+        const { db, doc, setDoc, getDoc } = await import('../data/firebase-config.js');
         
         // Test write permission
         const testDoc = doc(db, "users", AppState.currentUser.uid, "test", "permissions");

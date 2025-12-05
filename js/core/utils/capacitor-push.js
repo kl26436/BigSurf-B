@@ -6,7 +6,7 @@
  * When running as a web app, it does nothing.
  */
 
-import { auth, functions, httpsCallable } from './firebase-config.js';
+import { auth, functions, httpsCallable } from '../data/firebase-config.js';
 
 // Check if running in Capacitor
 const isCapacitor = typeof window !== 'undefined' &&

@@ -1,15 +1,15 @@
 // App Initialization Module - core/app-initialization.js
 // Handles application startup, authentication, and global setup
 
-import { auth, provider, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, db } from './firebase-config.js';
+import { auth, provider, onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, db } from './data/firebase-config.js';
 import { GoogleAuthProvider } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { AppState } from './app-state.js';
-import { showNotification, setTodayDisplay } from './ui-helpers.js';
-import { loadWorkoutPlans } from './data-manager.js'; // ADD loadWorkoutData here
-import { getExerciseLibrary } from './exercise-library.js';
-import { getWorkoutHistory } from './workout-history.js';
-import { initializeWorkoutManagement } from '../core/workout/workout-management-ui.js';
-import { initializeErrorHandler, startConnectionMonitoring } from './error-handler.js';
+import { AppState } from './utils/app-state.js';
+import { showNotification, setTodayDisplay } from './ui/ui-helpers.js';
+import { loadWorkoutPlans } from './data/data-manager.js'; // ADD loadWorkoutData here
+import { getExerciseLibrary } from './data/exercise-library.js';
+import { getWorkoutHistory } from './workout/workout-history.js';
+import { initializeWorkoutManagement } from './workout/workout-management-ui.js';
+import { initializeErrorHandler, startConnectionMonitoring } from './utils/error-handler.js';
 
 // ===================================================================
 // LOADING SCREEN MANAGEMENT
@@ -37,9 +37,17 @@ export function updateLoadingMessage(message) {
 }
 
 export function showSignInPrompt() {
+    const loadingScreen = document.getElementById('loading-screen');
     const signInPrompt = document.getElementById('loading-signin-prompt');
     const loadingSpinner = document.querySelector('.loading-spinner');
     const loadingMessage = document.getElementById('loading-message');
+
+    // Ensure loading screen is visible and covers everything
+    if (loadingScreen) {
+        loadingScreen.classList.remove('hidden');
+        loadingScreen.style.opacity = '1';
+        loadingScreen.style.display = 'flex';
+    }
 
     // Hide spinner and message
     if (loadingSpinner) loadingSpinner.style.display = 'none';
@@ -48,7 +56,14 @@ export function showSignInPrompt() {
     // Show sign-in prompt
     if (signInPrompt) {
         signInPrompt.classList.remove('hidden');
+        signInPrompt.style.display = 'block';
     }
+
+    // Hide header and bottom nav when on sign-in screen
+    const header = document.querySelector('.header');
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (header) header.style.display = 'none';
+    if (bottomNav) bottomNav.style.display = 'none';
 
     // Set up sign-in button in loading screen
     const loadingSignInBtn = document.getElementById('loading-signin-btn');
@@ -61,8 +76,24 @@ export function showSignInPrompt() {
 
 export function hideLoadingScreen() {
     const loadingScreen = document.getElementById('loading-screen');
+    const signInPrompt = document.getElementById('loading-signin-prompt');
+    const header = document.querySelector('.header');
+    const bottomNav = document.querySelector('.bottom-nav');
+
+    // Restore header and nav (they were hidden for sign-in screen)
+    if (header) header.style.display = '';
+    if (bottomNav) bottomNav.style.display = '';
+
+    // Hide sign-in prompt
+    if (signInPrompt) {
+        signInPrompt.classList.add('hidden');
+        signInPrompt.style.display = 'none';
+    }
+
     if (loadingScreen) {
+        // Immediately hide, then add hidden class after fade
         loadingScreen.style.opacity = '0';
+        loadingScreen.style.display = 'none'; // Force hide immediately
         setTimeout(() => {
             loadingScreen.classList.add('hidden');
         }, 300); // Match CSS transition time
@@ -154,7 +185,10 @@ export async function signIn() {
         // Hide sign-in prompt, show spinner
         const signInPrompt = document.getElementById('loading-signin-prompt');
         const loadingSpinner = document.querySelector('.loading-spinner');
-        if (signInPrompt) signInPrompt.classList.add('hidden');
+        if (signInPrompt) {
+            signInPrompt.classList.add('hidden');
+            signInPrompt.style.display = 'none';
+        }
         if (loadingSpinner) loadingSpinner.style.display = 'block';
     } catch (error) {
         console.error('Sign-in error:', error.code, error.message);
@@ -241,7 +275,10 @@ export async function signOutUser() {
 export function showUserInfo(user) {
     // Hide main auth section entirely
     const authSection = document.getElementById('auth-section');
-    if (authSection) authSection.classList.add('hidden');
+    if (authSection) {
+        authSection.classList.add('hidden');
+        authSection.style.display = 'none';
+    }
 
     // Show and populate sidebar user profile
     const sidebarProfile = document.getElementById('sidebar-user-profile');
@@ -292,7 +329,7 @@ export function setupAuthenticationListener() {
 
             // Check and run schema migration if needed (v3.0 - multiple workouts per day)
             try {
-                const { checkAndMigrateOnLogin } = await import('./schema-migration.js');
+                const { checkAndMigrateOnLogin } = await import('./data/schema-migration.js');
                 const migrationResult = await checkAndMigrateOnLogin(user.uid);
                 if (migrationResult.migrated > 0) {
                     console.log(`✅ Migrated ${migrationResult.migrated} workouts to schema v3.0`);
@@ -306,16 +343,16 @@ export function setupAuthenticationListener() {
             await loadWorkoutPlans(AppState);
 
             // Load PR tracking data
-            const { PRTracker } = await import('./pr-tracker.js');
+            const { PRTracker } = await import('./features/pr-tracker.js');
             await PRTracker.loadPRData();
 
             // Initialize background notifications
-            const { initializeNotifications } = await import('./notification-helper.js');
+            const { initializeNotifications } = await import('./utils/notification-helper.js');
             await initializeNotifications();
 
             // Initialize Firebase Cloud Messaging for iOS background/lock screen notifications
             try {
-                const { initializeFCM } = await import('./push-notification-manager.js');
+                const { initializeFCM } = await import('./utils/push-notification-manager.js');
                 await initializeFCM();
             } catch (e) {
                 // FCM not available or not configured - local notifications still work
@@ -328,13 +365,23 @@ export function setupAuthenticationListener() {
             await checkForInProgressWorkoutEnhanced();
 
             // Hide loading screen - data is ready!
-            setTimeout(() => {
+            setTimeout(async () => {
+                console.log('✅ Auth complete, hiding loading screen...');
                 hideLoadingScreen();
 
-                // Show dashboard by default
-                const { navigateTo } = window;
-                if (navigateTo) {
-                    navigateTo('dashboard');
+                // Show dashboard by default - use dynamic import to avoid timing issues
+                try {
+                    console.log('📊 Importing dashboard-ui...');
+                    const { showDashboard } = await import('./ui/dashboard-ui.js');
+                    console.log('📊 Calling showDashboard...');
+                    await showDashboard();
+                    console.log('📊 Dashboard should be visible now');
+                } catch (e) {
+                    console.error('❌ Error showing dashboard:', e);
+                    // Fallback to window.navigateTo if available
+                    if (window.navigateTo) {
+                        window.navigateTo('dashboard');
+                    }
                 }
             }, 500);
 
@@ -385,7 +432,7 @@ export async function validateUserData() {
     try {
         await refreshExerciseDatabase();
 
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('./data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         await workoutManager.getUserWorkoutTemplates();
     } catch (error) {
@@ -397,7 +444,7 @@ export async function validateUserData() {
 export async function refreshExerciseDatabase() {
     try {
         if (AppState.currentUser) {
-            const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+            const { FirebaseWorkoutManager } = await import('./data/firebase-workout-manager.js');
             const workoutManager = new FirebaseWorkoutManager(AppState);
             AppState.exerciseDatabase = await workoutManager.getExerciseLibrary();
         } else {
@@ -431,7 +478,7 @@ export function fillTemplateValues() {
 
 async function checkForInProgressWorkoutEnhanced() {
     try {
-        const { loadTodaysWorkout } = await import('./data-manager.js');
+        const { loadTodaysWorkout } = await import('./data/data-manager.js');
         const todaysData = await loadTodaysWorkout(AppState);
 
         if (todaysData && !todaysData.completedAt && !todaysData.cancelledAt) {
@@ -531,11 +578,11 @@ function showInProgressWorkoutPrompt(workoutData) {
         
         setTimeout(() => {
             if (confirm(message)) {
-                import('./workout-core.js').then(module => {
+                import('./workout/workout-core.js').then(module => {
                     module.continueInProgressWorkout();
                 });
             } else {
-                import('./workout-core.js').then(module => {
+                import('./workout/workout-core.js').then(module => {
                     module.discardInProgressWorkout();
                 });
             }
@@ -588,7 +635,7 @@ function setupOtherEventListeners() {
     if (globalUnitToggle) {
         globalUnitToggle.addEventListener('click', (e) => {
             if (e.target.classList.contains('unit-btn')) {
-                import('./workout-core.js').then(module => {
+                import('./workout/workout-core.js').then(module => {
                     module.setGlobalUnit(e.target.dataset.unit);
                 });
             }
@@ -692,7 +739,7 @@ function filterWorkoutsByCategory(category) {
     });
     
     // Import and use template selection module
-    import('./template-selection.js').then(module => {
+    import('./ui/template-selection.js').then(module => {
         module.filterTemplates(category);
     });
 }
@@ -701,9 +748,9 @@ function debounceWorkoutSearch(event) {
     clearTimeout(debounceWorkoutSearch.timeout);
     debounceWorkoutSearch.timeout = setTimeout(() => {
         const query = event.target.value;
-        
+
         // Import and use template selection module
-        import('./template-selection.js').then(module => {
+        import('./ui/template-selection.js').then(module => {
             module.searchTemplates(query);
         });
     }, 300);
@@ -711,7 +758,7 @@ function debounceWorkoutSearch(event) {
 
 function renderInitialWorkouts() {
     // Import and use template selection module
-    import('./template-selection.js').then(module => {
+    import('./ui/template-selection.js').then(module => {
         module.loadTemplatesByCategory();
     });
 }

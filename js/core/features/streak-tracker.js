@@ -1,8 +1,8 @@
 // Streak Tracking Module - core/streak-tracker.js
 // Tracks workout streaks and frequency stats
 
-import { AppState } from './app-state.js';
-import { db, doc, setDoc, getDoc, collection, getDocs, query, where } from './firebase-config.js';
+import { AppState } from '../utils/app-state.js';
+import { db, doc, setDoc, getDoc, collection, getDocs, query, where } from '../data/firebase-config.js';
 
 // ===================================================================
 // STREAK CALCULATION

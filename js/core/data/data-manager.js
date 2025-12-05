@@ -3,7 +3,7 @@
 // - Old schema: document ID = date (YYYY-MM-DD), one workout per day
 // - New schema: document ID = unique ID, date stored as field, multiple workouts per day
 import { db, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, where, deleteDoc } from './firebase-config.js';
-import { showNotification, convertWeight } from './ui-helpers.js';
+import { showNotification, convertWeight } from '../ui/ui-helpers.js';
 
 /**
  * Generate a unique workout ID
@@ -433,7 +433,7 @@ export async function loadExerciseHistory(exerciseName, exerciseIndex, state) {
             const unit = state.exerciseUnits[exerciseIndex] || state.globalUnit;
 
             // Get PR data for this exercise
-            const { PRTracker } = await import('./pr-tracker.js');
+            const { PRTracker } = await import('../features/pr-tracker.js');
             const exercise = state.currentWorkout?.exercises?.[exerciseIndex];
             const equipment = exercise?.equipment || 'Unknown Equipment';
             const prs = PRTracker.getExercisePRs(exerciseName, equipment);

@@ -1375,6 +1375,36 @@
     </div>
     <div id="more-menu-overlay" class="more-menu-overlay hidden" onclick="closeMoreMenu()"></div>
 
+    <!-- Force clear old service worker cache on version mismatch -->
+    <script>
+        (async function() {
+            if ('serviceWorker' in navigator) {
+                const REQUIRED_VERSION = 'v4.50';
+                const regs = await navigator.serviceWorker.getRegistrations();
+                for (const reg of regs) {
+                    // Check if cache is outdated
+                    const cacheNames = await caches.keys();
+                    const hasOldCache = cacheNames.some(name =>
+                        name.includes('big-surf') && !name.includes(REQUIRED_VERSION)
+                    );
+                    if (hasOldCache) {
+                        console.log('🔄 Clearing outdated service worker cache...');
+                        for (const name of cacheNames) {
+                            if (name.includes('big-surf') && !name.includes(REQUIRED_VERSION)) {
+                                await caches.delete(name);
+                                console.log('🗑️ Deleted old cache:', name);
+                            }
+                        }
+                        await reg.unregister();
+                        console.log('✅ Old service worker unregistered, reloading...');
+                        window.location.reload();
+                        return;
+                    }
+                }
+            }
+        })();
+    </script>
+
     <!-- Application Entry Point -->
     <script type="module" src="js/main.js"></script>
 </body>

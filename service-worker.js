@@ -1,16 +1,16 @@
 // Big Surf Workout Tracker - Service Worker
 // Provides basic offline functionality and faster loading
 
-const CACHE_NAME = 'big-surf-v4.39-unified-sw';
+const CACHE_NAME = 'big-surf-v4.50-unified-sw';
 const STATIC_ASSETS = [
   '/index.html',
   '/style.css',
   '/BigSurf.png',
   '/js/main.js',
   '/js/core/app-initialization.js',
-  '/js/core/app-state.js',
-  '/js/core/workout-core.js',
-  '/js/core/ui-helpers.js',
+  '/js/core/utils/app-state.js',
+  '/js/core/workout/workout-core.js',
+  '/js/core/ui/ui-helpers.js',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'
 ];
 

@@ -1,14 +1,14 @@
 // Dashboard UI Module - core/dashboard-ui.js
 // Unified dashboard with stats page layout, weekly goals, and in-progress workout
 
-import { StatsTracker } from './stats-tracker.js';
+import { StatsTracker } from '../features/stats-tracker.js';
 import { showNotification, setHeaderMode } from './ui-helpers.js';
 import { setBottomNavVisible, updateBottomNavActive } from './navigation.js';
-import { PRTracker } from './pr-tracker.js';
-import { StreakTracker } from './streak-tracker.js';
-import { AppState } from './app-state.js';
-import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
-import { db, collection, query, where, getDocs, orderBy } from './firebase-config.js';
+import { PRTracker } from '../features/pr-tracker.js';
+import { StreakTracker } from '../features/streak-tracker.js';
+import { AppState } from '../utils/app-state.js';
+import { FirebaseWorkoutManager } from '../data/firebase-workout-manager.js';
+import { db, collection, query, where, getDocs, orderBy } from '../data/firebase-config.js';
 
 // Timer interval for live rest countdown on dashboard
 let dashboardRestTimerInterval = null;
@@ -59,8 +59,8 @@ export async function showDashboard() {
  */
 async function checkForInProgressWorkout() {
     try {
-        const { AppState } = await import('./app-state.js');
-        const { loadTodaysWorkout } = await import('./data-manager.js');
+        const { AppState } = await import('../utils/app-state.js');
+        const { loadTodaysWorkout } = await import('../data/data-manager.js');
 
         // Check today's workout first
         let workoutData = await loadTodaysWorkout(AppState);
@@ -72,7 +72,7 @@ async function checkForInProgressWorkout() {
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-            const { loadWorkoutsByDate } = await import('./data-manager.js');
+            const { loadWorkoutsByDate } = await import('../data/data-manager.js');
             const yesterdayWorkouts = await loadWorkoutsByDate(AppState, yesterdayStr);
 
             // Find any incomplete workout from yesterday
@@ -96,7 +96,7 @@ async function checkForInProgressWorkout() {
                 const hasCompletedExercises = workoutData.exercises &&
                     Object.values(workoutData.exercises).some(ex => ex.completed || (ex.sets && ex.sets.length > 0));
 
-                const { setDoc, doc, db, deleteDoc } = await import('./firebase-config.js');
+                const { setDoc, doc, db, deleteDoc } = await import('../data/firebase-config.js');
                 // Schema v3.0: Use docId if available, fall back to date for old schema
                 const docId = workoutData.docId || workoutData.workoutId || workoutData.date;
                 const workoutRef = doc(db, "users", AppState.currentUser.uid, "workouts", docId);
@@ -363,8 +363,8 @@ async function renderDashboard() {
  */
 async function getTodaysCompletedWorkout() {
     try {
-        const { AppState } = await import('./app-state.js');
-        const { loadTodaysWorkout } = await import('./data-manager.js');
+        const { AppState } = await import('../utils/app-state.js');
+        const { loadTodaysWorkout } = await import('../data/data-manager.js');
         const workout = await loadTodaysWorkout(AppState);
         return workout && workout.completedAt ? workout : null;
     } catch {
@@ -454,7 +454,7 @@ function renderWeeklyGoalSection(weekCount, weeklyGoal, weeklyStats) {
  */
 async function getInProgressWorkoutData() {
     try {
-        const { loadTodaysWorkout } = await import('./data-manager.js');
+        const { loadTodaysWorkout } = await import('../data/data-manager.js');
 
         // Check today first
         let workoutData = await loadTodaysWorkout(AppState);
@@ -465,7 +465,7 @@ async function getInProgressWorkoutData() {
             yesterday.setDate(yesterday.getDate() - 1);
             const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-            const { getDoc, doc } = await import('./firebase-config.js');
+            const { getDoc, doc } = await import('../data/firebase-config.js');
             const yesterdayRef = doc(db, "users", AppState.currentUser.uid, "workouts", yesterdayStr);
             const yesterdaySnap = await getDoc(yesterdayRef);
 
@@ -1191,7 +1191,7 @@ async function getSuggestedWorkoutsForToday() {
 
     try {
         // Load all user templates (this already filters out hidden templates)
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         const allTemplates = await workoutManager.getUserWorkoutTemplates();
 

@@ -1,8 +1,8 @@
 // Location Service Module
 // Handles GPS location detection and gym location management
 
-import { AppState } from './app-state.js';
-import { showNotification } from './ui-helpers.js';
+import { AppState } from '../utils/app-state.js';
+import { showNotification } from '../ui/ui-helpers.js';
 
 // Default radius in meters for location matching
 // 500m accounts for GPS inaccuracy indoors, parking lot distance, and multi-building facilities

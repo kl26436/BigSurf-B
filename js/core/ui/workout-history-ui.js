@@ -1,7 +1,7 @@
 // Workout History UI Module - core/workout-history-ui.js
 // Handles workout history UI interactions with FULL CALENDAR VIEW
 
-import { AppState } from './app-state.js';
+import { AppState } from '../utils/app-state.js';
 import { showNotification, setHeaderMode } from './ui-helpers.js';
 import { setBottomNavVisible, updateBottomNavActive } from './navigation.js';
 

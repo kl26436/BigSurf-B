@@ -1,7 +1,7 @@
 // Template Selection Module - core/template-selection.js
 // Handles template browsing, selection, and immediate usage
 
-import { AppState } from './app-state.js';
+import { AppState } from '../utils/app-state.js';
 import { showNotification } from './ui-helpers.js';
 import { setBottomNavVisible, updateBottomNavActive } from './navigation.js';
 
@@ -50,7 +50,7 @@ export async function selectTemplate(templateId, isDefault = false) {
             );
         } else {
             // Load user's custom templates
-            const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+            const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
             const workoutManager = new FirebaseWorkoutManager(AppState);
             const userTemplates = await workoutManager.getUserWorkoutTemplates();
             
@@ -68,7 +68,7 @@ export async function selectTemplate(templateId, isDefault = false) {
         closeTemplateSelection();
         
         // Import and use startWorkout function (dynamic import to avoid circular dependency)
-        const { startWorkout } = await import('./workout-core.js');
+        const { startWorkout } = await import('../workout/workout-core.js');
         await startWorkout(selectedTemplate.day || selectedTemplate.name || templateId);
         
     } catch (error) {
@@ -154,7 +154,7 @@ export async function loadTemplatesByCategory() {
         } else if (currentTemplateCategory === 'custom') {
             // Load user's custom templates
             if (AppState.currentUser) {
-                const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+                const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
                 const workoutManager = new FirebaseWorkoutManager(AppState);
                 templates = await workoutManager.getUserWorkoutTemplates();
                 templates = templates.filter(t => t.isCustom);
@@ -234,7 +234,7 @@ export async function copyTemplateToCustom(templateId) {
         };
         
         // Save to Firebase
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         await workoutManager.saveWorkoutTemplate(customTemplate);
 
@@ -261,7 +261,7 @@ export async function deleteCustomTemplate(templateId) {
     }
     
     try {
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         await workoutManager.deleteWorkoutTemplate(templateId);
         
@@ -488,7 +488,7 @@ function createWorkoutPreviewModal() {
                 closeWorkoutPreviewModal();
                 
                 // Import and use startWorkout function (dynamic import to avoid circular dependency)
-                const { startWorkout } = await import('./workout-core.js');
+                const { startWorkout } = await import('../workout/workout-core.js');
                 await startWorkout(title.textContent);
             }
         });
@@ -639,7 +639,7 @@ export async function editTemplate(templateId) {
     
     try {
         // Load the template
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         
         let template = null;
@@ -813,7 +813,7 @@ export async function saveBasicTemplate() {
             lastUpdated: new Date().toISOString()
         };
         
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         await workoutManager.saveWorkoutTemplate(updatedTemplate);
         

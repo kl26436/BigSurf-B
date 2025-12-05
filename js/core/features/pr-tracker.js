@@ -1,8 +1,8 @@
 // PR Tracking Module - core/pr-tracker.js
 // Tracks personal records with equipment-specific and location-aware tracking
 
-import { AppState } from './app-state.js';
-import { db, doc, setDoc, getDoc } from './firebase-config.js';
+import { AppState } from '../utils/app-state.js';
+import { db, doc, setDoc, getDoc } from '../data/firebase-config.js';
 
 // ===================================================================
 // PR CUTOFF DATE - Only count PRs from this date onwards
@@ -519,7 +519,7 @@ export async function rebuildPRsFromHistory() {
         prData.exercisePRs = {};
 
         // Load all workouts from Firebase
-        const { collection, getDocs, query, orderBy } = await import('./firebase-config.js');
+        const { collection, getDocs, query, orderBy } = await import('../data/firebase-config.js');
         const workoutsRef = collection(db, 'users', AppState.currentUser.uid, 'workouts');
         const workoutsQuery = query(workoutsRef, orderBy('date', 'asc'));
         const snapshot = await getDocs(workoutsQuery);

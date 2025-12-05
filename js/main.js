@@ -5,7 +5,7 @@
 // ===================================================================
 
 // Core modules
-import { AppState } from './core/app-state.js';
+import { AppState } from './core/utils/app-state.js';
 import { startApplication } from './core/app-initialization.js';
 
 // Authentication functions
@@ -30,7 +30,7 @@ import {
     closeExerciseModal, loadExerciseHistory, loadLastWorkoutHint, autoStartRestTimer,
     changeExerciseEquipment, applyEquipmentChange,
     changeWorkoutLocation, selectWorkoutLocationOption, closeWorkoutLocationSelector, confirmWorkoutLocationChange
-} from './core/workout-core.js';
+} from './core/workout/workout-core.js';
 
 // Template selection functionality
 import {
@@ -39,13 +39,13 @@ import {
     useTemplate, useTemplateFromManagement, copyTemplateToCustom, deleteCustomTemplate,
     renderTemplateCards, createTemplateCard, filterTemplates, searchTemplates,
     getWorkoutCategory
-} from './core/template-selection.js';
+} from './core/ui/template-selection.js';
 
 // Workout history UI functionality
 import {
     showWorkoutHistory, viewWorkout, resumeWorkout, resumeWorkoutById, repeatWorkout,
     deleteWorkout, retryWorkout, clearAllHistoryFilters
-} from './core/workout-history-ui.js';
+} from './core/ui/workout-history-ui.js';
 
 // Workout management UI
 import {
@@ -71,7 +71,7 @@ import {
     // Legacy exports for backwards compatibility
     proceedToExerciseSelection, backToBasicInfo, finishManualWorkout,
     editManualExercise, markManualExerciseComplete, closeManualExerciseEntry
-} from './core/manual-workout.js';
+} from './core/features/manual-workout.js';
 
 // Exercise manager functionality
 import {
@@ -87,7 +87,7 @@ import {
     // New category grid functions
     showCategoryView, selectBodyPartCategory, filterByEquipment,
     handleExerciseSearch, toggleExerciseListSearch, handleExerciseCardClick
-} from './core/exercise-manager-ui.js';
+} from './core/ui/exercise-manager-ui.js';
 
 // Location selector functionality
 import {
@@ -98,34 +98,34 @@ import {
     setLocationAsCurrent, addNewLocationFromManagement, detectAndAddLocation,
     closeAddLocationModal, saveNewLocationFromModal,
     editLocationName, deleteLocation, showLocationOnMapById
-} from './core/location-ui.js';
+} from './core/features/location-ui.js';
 
 // Location service (GPS-based location detection)
-import { getSessionLocation } from './core/location-service.js';
+import { getSessionLocation } from './core/features/location-service.js';
 
 // UI helpers
-import { showStandaloneMenu } from './core/ui-helpers.js';
+import { showStandaloneMenu } from './core/ui/ui-helpers.js';
 
 // Navigation functionality
 import {
     openSidebar, closeSidebar, navigateTo,
     bottomNavTo, toggleMoreMenu, closeMoreMenu, setBottomNavVisible, updateBottomNavActive
-} from './core/navigation.js';
+} from './core/ui/navigation.js';
 
 // Dashboard functionality
 import {
     showDashboard, repeatLastWorkout, startSuggestedWorkout,
     toggleDashboardSection, toggleDashboardPRBodyPart
-} from './core/dashboard-ui.js';
+} from './core/ui/dashboard-ui.js';
 
 // Stats functionality
 import {
     showStats, closeStats, toggleStatsSection, togglePRBodyPart,
     filterPRs, clearPRFilters
-} from './core/stats-ui.js';
+} from './core/ui/stats-ui.js';
 
 // PR Migration (one-time utility)
-import { migrateOldWorkoutsToPRs } from './core/pr-migration.js';
+import { migrateOldWorkoutsToPRs } from './core/features/pr-migration.js';
 
 // Debug utilities
 import {
@@ -133,15 +133,15 @@ import {
     forceCheckHistoryData, testHistoryFilters,
     fixWorkoutHistoryReference, emergencyFixFilters,
     debounce, setupErrorLogging, runAllDebugChecks
-} from './core/debug-utilities.js';
+} from './core/utils/debug-utilities.js';
 
 // Firebase Workout Manager (for exercise-manager.html)
-import { FirebaseWorkoutManager } from './core/firebase-workout-manager.js';
+import { FirebaseWorkoutManager } from './core/data/firebase-workout-manager.js';
 
 // Push notification manager for iOS background notifications
 import {
     initializeFCM, sendTestNotification, isFCMAvailable
-} from './core/push-notification-manager.js';
+} from './core/utils/push-notification-manager.js';
 
 // ===================================================================
 // CALENDAR NAVIGATION FUNCTIONS (Add to window assignments)
@@ -202,7 +202,7 @@ window.startWorkoutFromModal = function(workoutName) {
         startWorkout(workoutName);
     } else {
         // Import and call the function dynamically
-        import('./core/workout-core.js').then(module => {
+        import('./core/workout/workout-core.js').then(module => {
             if (module.startWorkout) {
                 module.startWorkout(workoutName);
             }
@@ -556,7 +556,7 @@ window.sendTestNotification = sendTestNotification;
 window.isFCMAvailable = isFCMAvailable;
 
 // PR Tracker - expose for debugging and rebuilding
-import { PRTracker } from './core/pr-tracker.js';
+import { PRTracker } from './core/features/pr-tracker.js';
 window.PRTracker = PRTracker;
 
 // Debug utility to rebuild PRs from workout history

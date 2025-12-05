@@ -5,7 +5,7 @@
  * Uses Web Push API directly (more reliable on iOS Safari than FCM)
  */
 
-import { functions, auth, httpsCallable } from './firebase-config.js';
+import { functions, auth, httpsCallable } from '../data/firebase-config.js';
 import { AppState } from './app-state.js';
 
 // Push subscription for this device

@@ -1,8 +1,8 @@
 // Stats Tracker Module - core/stats-tracker.js
 // Calculates workout statistics and streaks
 
-import { AppState } from './app-state.js';
-import { db, collection, query, where, getDocs, orderBy, limit } from './firebase-config.js';
+import { AppState } from '../utils/app-state.js';
+import { db, collection, query, where, getDocs, orderBy, limit } from '../data/firebase-config.js';
 
 // ===================================================================
 // WORKOUT STREAK CALCULATION
@@ -216,22 +216,34 @@ export async function getWeeklyStats() {
 
         snapshot.forEach(doc => {
             const data = doc.data();
+
+            // Skip cancelled workouts
+            if (data.cancelledAt) return;
+
+            // Count completed sets for this workout
+            let workoutSets = 0;
+            let workoutExercises = 0;
+
+            if (data.exercises) {
+                workoutExercises = Object.keys(data.exercises).length;
+
+                Object.values(data.exercises).forEach(exercise => {
+                    if (exercise.sets && Array.isArray(exercise.sets)) {
+                        workoutSets += exercise.sets.filter(s => s.reps && s.weight).length;
+                    }
+                });
+            }
+
+            // Only count workouts with at least 1 completed set
+            if (workoutSets === 0) return;
+
             workouts.push({
                 id: doc.id,
                 ...data
             });
 
-            // Count exercises and sets
-            if (data.exercises) {
-                const exerciseCount = Object.keys(data.exercises).length;
-                totalExercises += exerciseCount;
-
-                Object.values(data.exercises).forEach(exercise => {
-                    if (exercise.sets && Array.isArray(exercise.sets)) {
-                        totalSets += exercise.sets.filter(s => s.reps && s.weight).length;
-                    }
-                });
-            }
+            totalSets += workoutSets;
+            totalExercises += workoutExercises;
 
             // Calculate duration
             if (data.totalDuration) {

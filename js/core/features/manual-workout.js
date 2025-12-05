@@ -1,8 +1,8 @@
 // Manual Workout Module - core/manual-workout.js
 // Simplified flow: Select date → Pick workout from library OR create custom → Enter sets → Save
 
-import { AppState } from './app-state.js';
-import { showNotification } from './ui-helpers.js';
+import { AppState } from '../utils/app-state.js';
+import { showNotification } from '../ui/ui-helpers.js';
 
 // ===================================================================
 // STATE
@@ -128,7 +128,7 @@ async function loadLocationsForManual() {
     if (!locationSelect) return;
 
     try {
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         const locations = await workoutManager.getUserLocations();
 
@@ -520,7 +520,7 @@ export async function saveManualWorkout() {
         });
 
         // Save to Firebase
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         await workoutManager.saveWorkout(workoutData);
 
@@ -552,7 +552,7 @@ export async function saveManualWorkout() {
 
 async function saveAsNewTemplate() {
     try {
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
 
         const templateData = {
@@ -610,7 +610,7 @@ export async function openEquipmentPickerForManual(exerciseIndex) {
 
     // Load equipment for this specific exercise
     try {
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         const equipmentList = await workoutManager.getEquipmentForExercise(exerciseName);
 

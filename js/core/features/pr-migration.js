@@ -1,8 +1,8 @@
 // PR Migration Utility - one-time script to process old workouts
 // Run this in console: window.migrateOldWorkoutsToPRs()
 
-import { AppState } from './app-state.js';
-import { db, collection, getDocs } from './firebase-config.js';
+import { AppState } from '../utils/app-state.js';
+import { db, collection, getDocs } from '../data/firebase-config.js';
 import { PRTracker } from './pr-tracker.js';
 
 /**

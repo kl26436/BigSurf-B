@@ -6,7 +6,7 @@ import {
     getDocs, orderBy, limit, onSnapshot 
 } from './firebase-config.js';
 import { writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { showNotification } from './ui-helpers.js';
+import { showNotification } from '../ui/ui-helpers.js';
 
 export class FirebaseWorkoutManager {
     constructor(appState) {

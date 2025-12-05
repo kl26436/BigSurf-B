@@ -1,16 +1,16 @@
 // Core Workout Management Module - core/workout-core.js
 // Handles workout session execution, exercise management, and workout lifecycle
 
-import { AppState } from './app-state.js';
-import { showNotification, convertWeight, updateProgress, setHeaderMode, stopActiveWorkoutRestTimer } from './ui-helpers.js';
-import { setBottomNavVisible } from './navigation.js';
-import { saveWorkoutData, loadExerciseHistory } from './data-manager.js';
-import { scheduleRestNotification, cancelRestNotification, isFCMAvailable } from './push-notification-manager.js';
+import { AppState } from '../utils/app-state.js';
+import { showNotification, convertWeight, updateProgress, setHeaderMode, stopActiveWorkoutRestTimer } from '../ui/ui-helpers.js';
+import { setBottomNavVisible } from '../ui/navigation.js';
+import { saveWorkoutData, loadExerciseHistory } from '../data/data-manager.js';
+import { scheduleRestNotification, cancelRestNotification, isFCMAvailable } from '../utils/push-notification-manager.js';
 import {
     detectLocation, setSessionLocation, getSessionLocation,
     lockLocation, isLocationLocked, resetLocationState,
     showLocationPrompt, updateLocationIndicator, getCurrentCoords
-} from './location-service.js';
+} from '../features/location-service.js';
 
 // Global timer state to persist across modal re-renders
 let activeRestTimer = null;
@@ -42,7 +42,7 @@ export async function startWorkout(workoutType) {
     }
 
     // Check if there's already a workout for today
-    const { loadTodaysWorkout } = await import('./data-manager.js');
+    const { loadTodaysWorkout } = await import('../data/data-manager.js');
     const todaysWorkout = await loadTodaysWorkout(AppState);
 
     if (todaysWorkout) {
@@ -58,7 +58,7 @@ export async function startWorkout(workoutType) {
 
             if (!confirmed) {
                 // Navigate back to dashboard
-                const { navigateTo } = await import('./navigation.js');
+                const { navigateTo } = await import('../ui/navigation.js');
                 navigateTo('dashboard');
                 return;
             }
@@ -74,7 +74,7 @@ export async function startWorkout(workoutType) {
 
             if (!confirmed) {
                 // Navigate back to dashboard
-                const { navigateTo } = await import('./navigation.js');
+                const { navigateTo } = await import('../ui/navigation.js');
                 navigateTo('dashboard');
                 return;
             }
@@ -109,7 +109,7 @@ export async function startWorkout(workoutType) {
 
     // If not found in cache, try refreshing from Firebase
     if (!workout) {
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         AppState.workoutPlans = await workoutManager.getUserWorkoutTemplates();
 
@@ -231,7 +231,7 @@ export async function completeWorkout() {
 
     // Process workout for PRs - ONLY for new workouts, not edits (to avoid duplicate PRs)
     if (!isEditingHistorical) {
-        const { PRTracker } = await import('./pr-tracker.js');
+        const { PRTracker } = await import('../features/pr-tracker.js');
         await PRTracker.processWorkoutForPRs(AppState.savedData);
     }
 
@@ -250,7 +250,7 @@ export async function completeWorkout() {
     updateWorkoutButtonsForEditMode(false);
 
     // Show dashboard after completion
-    const { showDashboard } = await import('./dashboard-ui.js');
+    const { showDashboard } = await import('../ui/dashboard-ui.js');
     showDashboard();
 }
 
@@ -283,7 +283,7 @@ export function cancelWorkout(skipConfirmation = false) {
     updateWorkoutButtonsForEditMode(false);
 
     // Navigate to dashboard instead of legacy workout selector
-    import('./navigation.js').then(({ navigateTo }) => {
+    import('../ui/navigation.js').then(({ navigateTo }) => {
         navigateTo('dashboard');
     });
 }
@@ -367,7 +367,7 @@ export async function editHistoricalWorkout(dateStr) {
     }
 
     // Load the workout data from Firebase
-    const { loadWorkoutByDate } = await import('./data-manager.js');
+    const { loadWorkoutByDate } = await import('../data/data-manager.js');
     const workoutData = await loadWorkoutByDate(AppState, dateStr);
 
     if (!workoutData) {
@@ -534,7 +534,7 @@ export async function discardEditedWorkout() {
     AppState.savedData = {};
 
     // Navigate back to history
-    const { navigateTo } = await import('./navigation.js');
+    const { navigateTo } = await import('../ui/navigation.js');
     navigateTo('history');
 }
 
@@ -569,7 +569,7 @@ export async function discardInProgressWorkout() {
         // DELETE the workout from Firebase FIRST
         try {
             if (workoutToDelete.userId && workoutToDelete.date) {
-                const { deleteDoc, doc, db } = await import('./firebase-config.js');
+                const { deleteDoc, doc, db } = await import('../data/firebase-config.js');
 
                 const workoutRef = doc(db, "users", workoutToDelete.userId, "workouts", workoutToDelete.date);
                 await deleteDoc(workoutRef);
@@ -998,7 +998,7 @@ async function checkSetForPR(exerciseIndex, setIndex) {
             return false;
         }
 
-        const { PRTracker } = await import('./pr-tracker.js');
+        const { PRTracker } = await import('../features/pr-tracker.js');
         const prCheck = PRTracker.checkForNewPR(exerciseName, set.reps, set.weight, equipment);
 
         if (prCheck.isNewPR) {
@@ -1319,10 +1319,20 @@ export function closeExerciseModal() {
         setBottomNavVisible(true);
     }
 
-    // Clear any modal rest timers
+    // Save current timer state to AppState before closing (for restore on reopen)
     if (AppState.focusedExerciseIndex !== null) {
         const modalTimer = document.getElementById(`modal-rest-timer-${AppState.focusedExerciseIndex}`);
-        if (modalTimer && modalTimer.timerData) {
+        if (modalTimer && modalTimer.timerData && !modalTimer.classList.contains('hidden')) {
+            // Update AppState with current timeLeft so timer resumes correctly on reopen
+            if (AppState.activeRestTimer && AppState.activeRestTimer.exerciseIndex === AppState.focusedExerciseIndex) {
+                // Store the current remaining time as the new duration baseline
+                AppState.activeRestTimer.duration = modalTimer.timerData.timeLeft;
+                AppState.activeRestTimer.startTime = Date.now();
+                AppState.activeRestTimer.pausedTime = 0;
+                AppState.activeRestTimer.isPaused = modalTimer.timerData.isPaused;
+            }
+
+            // Cancel animation frame (timer continues via AppState)
             if (modalTimer.timerData.animationFrame) {
                 cancelAnimationFrame(modalTimer.timerData.animationFrame);
             }
@@ -1367,7 +1377,7 @@ export async function changeExerciseEquipment(exerciseIndex) {
 
     // Load equipment that has been used with this exercise
     try {
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         const exerciseEquipment = await workoutManager.getEquipmentForExercise(exerciseName);
         const allEquipment = await workoutManager.getUserEquipment();
@@ -1413,8 +1423,17 @@ export async function changeExerciseEquipment(exerciseIndex) {
         }
 
         if (locationDatalist) {
-            const locations = [...new Set(allEquipment.filter(eq => eq.location).map(eq => eq.location))];
-            locationDatalist.innerHTML = locations.map(loc => `<option value="${loc}">`).join('');
+            // Get locations from equipment AND from saved gym locations
+            const equipmentLocations = allEquipment.filter(eq => eq.location).map(eq => eq.location);
+            let savedGymLocations = [];
+            try {
+                savedGymLocations = await workoutManager.getUserLocations();
+                savedGymLocations = savedGymLocations.map(loc => loc.name);
+            } catch (e) {
+                // Ignore errors fetching gym locations
+            }
+            const allLocations = [...new Set([...equipmentLocations, ...savedGymLocations])];
+            locationDatalist.innerHTML = allLocations.map(loc => `<option value="${loc}">`).join('');
         }
     } catch (error) {
         console.error('❌ Error loading equipment:', error);
@@ -1444,7 +1463,7 @@ export async function applyEquipmentChange(equipmentName, equipmentLocation, equ
     // Save equipment to Firebase if it's new (include video)
     if (equipmentName) {
         try {
-            const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+            const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
             const workoutManager = new FirebaseWorkoutManager(AppState);
             await workoutManager.getOrCreateEquipment(equipmentName, equipmentLocation, exerciseName, equipmentVideo);
         } catch (error) {
@@ -1523,8 +1542,8 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
     exerciseLabel.textContent = `Rest Period - ${exercise.machine}`;
     modalTimer.classList.remove('hidden');
 
-    // Set timer text to black immediately
-    timerDisplay.style.color = '#000000';
+    // Set timer text to primary color (teal)
+    timerDisplay.style.color = 'var(--primary)';
 
     let timeLeft = duration;
     let isPaused = false;
@@ -1625,7 +1644,7 @@ function startModalRestTimer(exerciseIndex, duration = 90) {
                 cancelAnimationFrame(modalTimer.timerData.animationFrame);
             }
             modalTimer.classList.add('hidden');
-            timerDisplay.style.color = '#000000';
+            timerDisplay.style.color = 'var(--primary)';
             modalTimer.timerData = null;
 
             // Clear AppState timer
@@ -1674,7 +1693,7 @@ function clearModalRestTimer(exerciseIndex) {
     // Reset display
     const timerDisplay = modalTimer.querySelector('.modal-rest-display');
     if (timerDisplay) {
-        timerDisplay.style.color = '#000000';
+        timerDisplay.style.color = 'var(--primary)';
     }
     
     // Reset pause button
@@ -1688,32 +1707,35 @@ function restoreModalRestTimer(exerciseIndex, timerState) {
     const modalTimer = document.getElementById(`modal-rest-timer-${exerciseIndex}`);
     const exerciseLabel = modalTimer?.querySelector('.modal-rest-exercise');
     const timerDisplay = modalTimer?.querySelector('.modal-rest-display');
-    
+
     if (!modalTimer || !exerciseLabel || !timerDisplay) return;
-    
+
     // Restore visual state
     exerciseLabel.textContent = timerState.exerciseLabel;
     modalTimer.classList.remove('hidden');
 
-    // Set timer text to black immediately
-    timerDisplay.style.color = '#000000';
+    // Set timer text to primary color (teal)
+    timerDisplay.style.color = 'var(--primary)';
 
+    // Use the saved timeLeft as our starting point, reset startTime to now
+    // This ensures the timer continues from where it was saved, not recalculated
     let timeLeft = timerState.timeLeft;
     let isPaused = timerState.isPaused;
-    let startTime = timerState.startTime || Date.now();
-    let pausedTime = timerState.pausedTime || 0;
-    
+    let startTime = Date.now(); // Always reset to now
+    let pausedTime = 0; // Reset since we're using current timeLeft as baseline
+    let initialTimeLeft = timeLeft; // Store initial value for elapsed calculation
+
     const updateDisplay = () => {
         const minutes = Math.floor(timeLeft / 60);
         const seconds = timeLeft % 60;
         timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
-    
+
     const checkTime = () => {
         if (isPaused) return;
 
         const elapsed = Math.floor((Date.now() - startTime - pausedTime) / 1000);
-        timeLeft = Math.max(0, timerState.timeLeft - elapsed);
+        timeLeft = Math.max(0, initialTimeLeft - elapsed);
 
         // Update stored timeLeft so save/restore works correctly
         if (modalTimer.timerData) {
@@ -1780,7 +1802,7 @@ function restoreModalRestTimer(exerciseIndex, timerState) {
                 cancelAnimationFrame(modalTimer.timerData.animationFrame);
             }
             modalTimer.classList.add('hidden');
-            timerDisplay.style.color = '#000000';
+            timerDisplay.style.color = 'var(--primary)';
             modalTimer.timerData = null;
         }
     };
@@ -1802,7 +1824,7 @@ function stopModalRestTimer(exerciseIndex) {
     // Reset display color
     const timerDisplay = modalTimer.querySelector('.modal-rest-display');
     if (timerDisplay) {
-        timerDisplay.style.color = '#000000';
+        timerDisplay.style.color = 'var(--primary)';
     }
     
     // Reset pause button
@@ -2135,7 +2157,7 @@ export async function editExerciseDefaults(exerciseName) {
     window.editingFromActiveWorkout = true;
 
     // Open the exercise manager and edit this exercise
-    const { openExerciseManager, editExercise } = await import('./exercise-manager-ui.js');
+    const { openExerciseManager, editExercise } = await import('../ui/exercise-manager-ui.js');
     openExerciseManager();
 
     // Small delay to let the manager UI load
@@ -2182,7 +2204,7 @@ async function checkForInProgressWorkout() {
     }
     
     try {
-        const { loadTodaysWorkout } = await import('./data-manager.js');
+        const { loadTodaysWorkout } = await import('../data/data-manager.js');
         const todaysData = await loadTodaysWorkout(AppState);
         
         // Check if there's an incomplete workout from today
@@ -2249,8 +2271,8 @@ export async function loadLastWorkoutHint(exerciseName, exerciseIndex) {
     }
 
     try {
-        const { collection, query, orderBy, limit, getDocs } = await import('./firebase-config.js');
-        const { db } = await import('./firebase-config.js');
+        const { collection, query, orderBy, limit, getDocs } = await import('../data/firebase-config.js');
+        const { db } = await import('../data/firebase-config.js');
 
         const workoutsRef = collection(db, "users", AppState.currentUser.uid, "workouts");
         const q = query(workoutsRef, orderBy("lastUpdated", "desc"), limit(10));
@@ -2315,7 +2337,7 @@ async function initializeWorkoutLocation() {
         const existingSessionLocation = getSessionLocation();
         if (existingSessionLocation) {
             // Already have a location, update visit count and proceed
-            const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+            const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
             const workoutManager = new FirebaseWorkoutManager(AppState);
             const savedLocations = await workoutManager.getUserLocations();
             const existingLoc = savedLocations.find(loc => loc.name === existingSessionLocation);
@@ -2329,7 +2351,7 @@ async function initializeWorkoutLocation() {
         resetLocationState();
 
         // Get user's saved locations from Firebase
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         const savedLocations = await workoutManager.getUserLocations();
 
@@ -2457,7 +2479,7 @@ async function associateLocationWithWorkoutEquipment(locationName) {
     if (!locationName || !AppState.currentWorkout?.exercises) return;
 
     try {
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
 
         // Get all equipment from user's collection
@@ -2499,7 +2521,7 @@ export async function changeWorkoutLocation() {
 
     try {
         // Load saved locations
-        const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const workoutManager = new FirebaseWorkoutManager(AppState);
         const savedLocations = await workoutManager.getUserLocations();
 

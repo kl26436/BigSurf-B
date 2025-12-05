@@ -1,7 +1,7 @@
 // Global Error Handler - js/core/error-handler.js
 // Catches unhandled errors and provides better UX
 
-import { showNotification } from './ui-helpers.js';
+import { showNotification } from '../ui/ui-helpers.js';
 
 // Track errors to prevent spam
 const errorLog = [];
@@ -129,7 +129,7 @@ export function isOnline() {
 export async function checkFirebaseConnection(db) {
     try {
         // Try to read from a test collection
-        const { collection, getDocs, limit, query } = await import('../core/firebase-config.js');
+        const { collection, getDocs, limit, query } = await import('../data/firebase-config.js');
         const testQuery = query(collection(db, 'exercises'), limit(1));
         await getDocs(testQuery);
         return true;

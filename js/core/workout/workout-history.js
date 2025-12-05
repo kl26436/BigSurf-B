@@ -1,5 +1,5 @@
 // Clean Workout History Module with Calendar View - core/workout-history.js
-import { showNotification } from './ui-helpers.js';
+import { showNotification } from '../ui/ui-helpers.js';
 
 export function getWorkoutHistory(appState) {
     let currentHistory = [];
@@ -55,7 +55,7 @@ export function getWorkoutHistory(appState) {
             if (!appState.currentUser) return;
 
             try {
-                const { FirebaseWorkoutManager } = await import('./firebase-workout-manager.js');
+                const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
                 const workoutManager = new FirebaseWorkoutManager(appState);
                 
                 this.currentHistory = await workoutManager.getUserWorkouts();
@@ -1015,7 +1015,7 @@ calculateProgress(workout) {
             if (!confirmDelete) return;
 
             try {
-                const { deleteDoc, doc, db } = await import('./firebase-config.js');
+                const { deleteDoc, doc, db } = await import('../data/firebase-config.js');
                 await deleteDoc(doc(db, "users", appState.currentUser.uid, "workouts", workoutId));
 
                 // Remove from local arrays
@@ -1116,8 +1116,8 @@ calculateProgress(workout) {
 
         if (confirm(`Delete workout from ${displayDate}? This cannot be undone.`)) {
             try {
-                const { deleteDoc, doc, db } = await import('./firebase-config.js');
-                const { AppState } = await import('./app-state.js');
+                const { deleteDoc, doc, db } = await import('../data/firebase-config.js');
+                const { AppState } = await import('../utils/app-state.js');
                 await deleteDoc(doc(db, "users", AppState.currentUser.uid, "workouts", docId));
 
                 // Refresh calendar

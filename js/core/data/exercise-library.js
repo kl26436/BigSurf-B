@@ -1,5 +1,5 @@
 // Enhanced Exercise Library Module - core/exercise-library.js
-import { showNotification } from './ui-helpers.js';
+import { showNotification } from '../ui/ui-helpers.js';
 
 export function getExerciseLibrary(appState) {
     let isOpen = false;

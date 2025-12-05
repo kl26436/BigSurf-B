@@ -1,12 +1,12 @@
 // Stats UI Module - core/stats-ui.js
 // Stats page matching the mockup design
 
-import { PRTracker } from './pr-tracker.js';
-import { StreakTracker } from './streak-tracker.js';
+import { PRTracker } from '../features/pr-tracker.js';
+import { StreakTracker } from '../features/streak-tracker.js';
 import { setBottomNavVisible, navigateTo } from './navigation.js';
-import { AppState } from './app-state.js';
-import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
-import { db, collection, query, where, getDocs, orderBy } from './firebase-config.js';
+import { AppState } from '../utils/app-state.js';
+import { FirebaseWorkoutManager } from '../data/firebase-workout-manager.js';
+import { db, collection, query, where, getDocs, orderBy } from '../data/firebase-config.js';
 
 // ===================================================================
 // STATE

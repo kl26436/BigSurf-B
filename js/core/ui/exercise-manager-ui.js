@@ -1,9 +1,9 @@
 // Exercise Manager UI Module
 // Handles the integrated exercise manager modal
 
-import { AppState } from './app-state.js';
+import { AppState } from '../utils/app-state.js';
 import { showNotification, setHeaderMode } from './ui-helpers.js';
-import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
+import { FirebaseWorkoutManager } from '../data/firebase-workout-manager.js';
 import { setBottomNavVisible } from './navigation.js';
 
 let allExercises = [];
@@ -803,7 +803,7 @@ export async function addEquipmentToList() {
         // Refresh the list and auto-select the new equipment
         await populateEquipmentListForSection(exerciseName, equipmentName, locationName);
 
-        showNotification('Equipment added!', 'success');
+        // Silent success - equipment appears in list immediately
 
     } catch (error) {
         console.error('❌ Error adding equipment:', error);

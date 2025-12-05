@@ -1,11 +1,11 @@
 // Location UI Module - core/location-ui.js
 // Handles location management UI - uses Firebase locations
 
-import { showNotification } from './ui-helpers.js';
-import { AppState } from './app-state.js';
-import { FirebaseWorkoutManager } from './firebase-workout-manager.js';
+import { showNotification } from '../ui/ui-helpers.js';
+import { AppState } from '../utils/app-state.js';
+import { FirebaseWorkoutManager } from '../data/firebase-workout-manager.js';
 import { getSessionLocation, setSessionLocation, getCurrentPosition, findNearbyLocation } from './location-service.js';
-import { functions, httpsCallable } from './firebase-config.js';
+import { functions, httpsCallable } from '../data/firebase-config.js';
 
 let workoutManager = null;
 let cachedLocations = [];

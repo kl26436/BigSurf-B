@@ -3025,12 +3025,70 @@ input[type="number"] { -moz-appearance: textfield; }
   color: var(--text-muted);
   margin: 16px 0 8px;
 }
-.edit-equipment-list { margin-bottom: 16px; }
+.edit-equipment-list {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 .edit-equipment-empty {
   text-align: center;
   padding: 16px;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+/* Equipment item cards in edit exercise section */
+.edit-equipment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+.edit-equipment-item:hover {
+  border-color: var(--primary);
+  background: var(--bg-card-hi);
+}
+.edit-equipment-item.selected {
+  border-color: var(--primary);
+  background: rgba(29, 211, 176, 0.1);
+}
+.edit-equipment-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.edit-equipment-item-name {
+  font-weight: 600;
+  color: var(--text-strong);
+  margin-bottom: 2px;
+}
+.edit-equipment-item-location {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.edit-equipment-item-edit {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 12px;
+  transition: border-color 0.2s, color 0.2s;
+}
+.edit-equipment-item-edit:hover {
+  border-color: var(--primary);
+  color: var(--primary);
 }
 .edit-add-equipment { margin-top: 16px; }
 .edit-equipment-form { display: flex; flex-direction: column; gap: 10px; }
@@ -3867,34 +3925,37 @@ input[type="number"] { -moz-appearance: textfield; }
 .modal-rest-timer {
   background: var(--bg-card-hi);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  margin: 12px 0;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin: 8px 0;
 }
 .modal-rest-content {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 .modal-rest-exercise {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   font-weight: 500;
-  margin-bottom: 8px;
   color: var(--text-muted);
+  flex-shrink: 1;
+  min-width: 0;
 }
 .modal-rest-display {
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--primary);
-  margin: 8px 0;
+  flex-shrink: 0;
 }
 .modal-rest-controls {
   display: flex;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 .modal-rest-controls .btn {
-  padding: 8px 16px;
-  font-size: 0.9rem;
+  padding: 6px 12px;
+  font-size: 0.85rem;
 }
 
 /* ===========================================

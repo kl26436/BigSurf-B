@@ -1,9 +1,9 @@
 // Workout Management UI Functions
-import { AppState } from '../app-state.js';
-import { FirebaseWorkoutManager } from '../firebase-workout-manager.js';
-import { showNotification, setHeaderMode } from '../ui-helpers.js';
-import { getSessionLocation } from '../location-service.js';
-import { setBottomNavVisible } from '../navigation.js';
+import { AppState } from '../utils/app-state.js';
+import { FirebaseWorkoutManager } from '../data/firebase-workout-manager.js';
+import { showNotification, setHeaderMode } from '../ui/ui-helpers.js';
+import { getSessionLocation } from '../features/location-service.js';
+import { setBottomNavVisible } from '../ui/navigation.js';
 
 let workoutManager;
 let currentEditingTemplate = null;
@@ -313,7 +313,7 @@ export async function editTemplate(templateId, isDefault = false) {
 
     try {
         // Load all templates including raw defaults
-        const { FirebaseWorkoutManager } = await import('../firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const manager = new FirebaseWorkoutManager(AppState);
 
         let template;
@@ -368,7 +368,7 @@ export async function deleteTemplate(templateId, isDefault = false) {
     // Get template name for the hidden marker
     let templateName = templateId;
     if (isDefault) {
-        const { FirebaseWorkoutManager } = await import('../firebase-workout-manager.js');
+        const { FirebaseWorkoutManager } = await import('../data/firebase-workout-manager.js');
         const manager = new FirebaseWorkoutManager(AppState);
         const allDefaults = await manager.getGlobalDefaultTemplates();
         const template = allDefaults.find(t => (t.id || t.day) === templateId);
@@ -427,7 +427,7 @@ export async function resetToDefault(defaultTemplateId) {
                 // Reload AppState and UI
                 AppState.workoutPlans = await workoutManager.getUserWorkoutTemplates();
                 await loadWorkoutTemplates();
-                const { loadTemplatesByCategory } = await import('../template-selection.js');
+                const { loadTemplatesByCategory } = await import('../ui/template-selection.js');
                 await loadTemplatesByCategory();
             }
 
@@ -1009,8 +1009,17 @@ async function showEquipmentPicker(exercise, isActiveWorkout) {
         }
 
         if (locationDatalist) {
-            const locations = [...new Set(allEquipment.filter(eq => eq.location).map(eq => eq.location))];
-            locationDatalist.innerHTML = locations.map(loc => `<option value="${loc}">`).join('');
+            // Get locations from equipment AND from saved gym locations
+            const equipmentLocations = allEquipment.filter(eq => eq.location).map(eq => eq.location);
+            let savedGymLocations = [];
+            try {
+                savedGymLocations = await workoutManager.getUserLocations();
+                savedGymLocations = savedGymLocations.map(loc => loc.name);
+            } catch (e) {
+                // Ignore errors fetching gym locations
+            }
+            const allLocations = [...new Set([...equipmentLocations, ...savedGymLocations])];
+            locationDatalist.innerHTML = allLocations.map(loc => `<option value="${loc}">`).join('');
         }
     } catch (error) {
         console.error('Error loading equipment:', error);
@@ -1041,13 +1050,18 @@ export async function addEquipmentFromPicker() {
     const videoInput = document.getElementById('equipment-picker-new-video');
 
     const equipmentName = nameInput?.value.trim();
-    const locationName = locationInput?.value.trim();
+    let locationName = locationInput?.value.trim();
     const videoUrl = videoInput?.value.trim();
 
     if (!equipmentName) {
         showNotification('Enter an equipment name', 'warning');
         nameInput?.focus();
         return;
+    }
+
+    // If no location specified and we're in an active workout, use session location
+    if (!locationName && (window.equipmentPickerForActiveWorkout || window.changingEquipmentDuringWorkout)) {
+        locationName = getSessionLocation() || '';
     }
 
     // Get the exercise name from pending exercise or current workout
@@ -1116,7 +1130,7 @@ export async function addEquipmentFromPicker() {
             });
         }
 
-        showNotification('Equipment added!', 'success');
+        // Silent success - equipment appears in list immediately
 
     } catch (error) {
         console.error('Error adding equipment:', error);
@@ -1161,6 +1175,11 @@ export function confirmEquipmentSelection() {
         equipmentName = newName;
         equipmentLocation = newLocation || null;
         equipmentVideo = newVideo || null;
+    }
+
+    // If no location and we're in an active workout, use session location
+    if (!equipmentLocation && (window.equipmentPickerForActiveWorkout || window.changingEquipmentDuringWorkout)) {
+        equipmentLocation = getSessionLocation() || null;
     }
 
     // Check if we're changing equipment during a workout
@@ -1208,14 +1227,11 @@ async function finalizeExerciseAddition(equipmentName, equipmentLocation, equipm
             equipment: equipmentName,
             equipmentLocation: equipmentLocation
         };
-        const wasAdded = window.confirmExerciseAddToWorkout(exerciseWithEquipment);
+        window.confirmExerciseAddToWorkout(exerciseWithEquipment);
         closeExerciseLibrary();
         closeEquipmentPicker();
         window.addingToActiveWorkout = false;
-        // Only show success if it wasn't a duplicate
-        if (wasAdded) {
-            showNotification(`Added "${exerciseName}" to workout`, 'success');
-        }
+        // Silent success - exercise card appears immediately in workout
         return;
     }
 
@@ -1238,7 +1254,7 @@ async function finalizeExerciseAddition(equipmentName, equipmentLocation, equipm
         renderTemplateExercises();
         closeExerciseLibrary();
         closeEquipmentPicker();
-        showNotification(`Added "${templateExercise.name}" to workout`, 'success');
+        // Silent success - exercise appears immediately in template editor
     }
 }
 
@@ -1418,7 +1434,7 @@ async function checkForInProgressWorkout(appState) {
     if (window.showingProgressPrompt) return;
     
     try {
-        const { loadTodaysWorkout } = await import('./data-manager.js');
+        const { loadTodaysWorkout } = await import('../data/data-manager.js');
         const todaysData = await loadTodaysWorkout(appState);
         
         // Check if there's an incomplete workout from today
