@@ -433,6 +433,106 @@
         }
 
         .back-link:hover { color: var(--primary); }
+
+        /* Exercise Filter View */
+        .exercise-filter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .exercise-filter-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .exercise-filter-header h3 i {
+            color: var(--primary);
+        }
+
+        .exercise-count {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .exercise-instance {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .exercise-instance.selected {
+            border-color: var(--primary);
+            background: rgba(29,211,176,0.05);
+        }
+
+        .instance-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .instance-date {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .instance-workout {
+            color: var(--text-strong);
+        }
+
+        .instance-location {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .instance-fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .instance-fields {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sets-field span {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .instance-notes, .exercise-notes {
+            background: rgba(255,193,7,0.1);
+            border-left: 3px solid var(--warning);
+            padding: 10px 12px;
+            margin-top: 8px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .instance-notes i, .exercise-notes i {
+            color: var(--warning);
+            margin-right: 8px;
+        }
+
+        .exercise-notes {
+            margin-left: 32px;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body>
@@ -666,7 +766,8 @@
                                 name: name,
                                 equipment: equipment,
                                 equipmentLocation: ex.equipmentLocation || originalEx?.equipmentLocation || null,
-                                sets: ex.sets?.length || 0
+                                sets: ex.sets?.length || 0,
+                                notes: ex.notes || originalEx?.notes || null
                             });
                         });
                     }
@@ -733,6 +834,12 @@
             const locationFilter = document.getElementById('location-filter').value;
             const statusFilter = document.getElementById('status-filter').value;
 
+            // If filtering by exercise, show flat list of just those exercises
+            if (exerciseFilter) {
+                renderExerciseList(exerciseFilter, searchTerm, locationFilter);
+                return;
+            }
+
             let filtered = allWorkouts.filter(w => {
                 // Search
                 if (searchTerm) {
@@ -740,14 +847,8 @@
                         w.workoutType?.toLowerCase().includes(searchTerm) ||
                         w.date?.includes(searchTerm) ||
                         w.location?.toLowerCase().includes(searchTerm) ||
-                        w.exercises.some(ex => ex.name?.toLowerCase().includes(searchTerm));
+                        w.exercises.some(ex => ex.name?.toLowerCase().includes(searchTerm) || ex.notes?.toLowerCase().includes(searchTerm));
                     if (!searchMatch) return false;
-                }
-
-                // Exercise filter
-                if (exerciseFilter) {
-                    const hasExercise = w.exercises.some(ex => ex.name === exerciseFilter);
-                    if (!hasExercise) return false;
                 }
 
                 // Location filter
@@ -788,35 +889,131 @@
                     </div>
 
                     <div class="exercise-list">
-                        ${w.exercises.map(ex => {
-                            const selKey = `${w.docId}|${ex.key}`;
-                            const isSelected = selectedExercises.has(selKey);
-                            return `
-                            <div class="exercise-item ${isSelected ? 'selected' : ''}" data-sel-key="${selKey}">
-                                <input type="checkbox"
-                                    class="exercise-checkbox"
-                                    ${isSelected ? 'checked' : ''}
-                                    onchange="toggleExerciseSelection('${w.docId}', '${ex.key}', '${ex.name.replace(/'/g, "\\'")}', this.checked)">
-                                <div class="exercise-name">${ex.name} ${ex.sets > 0 ? `(${ex.sets} sets)` : ''}</div>
-                                <div class="exercise-field">
-                                    <label>Equipment</label>
-                                    <input type="text"
-                                        value="${ex.equipment || ''}"
-                                        placeholder="Enter equipment..."
-                                        onchange="updateExerciseField('${w.docId}', '${ex.key}', 'equipment', this.value)">
-                                </div>
-                                <div class="exercise-field">
-                                    <label>Equipment Location</label>
-                                    <input type="text"
-                                        value="${ex.equipmentLocation || ''}"
-                                        placeholder="Enter location..."
-                                        onchange="updateExerciseField('${w.docId}', '${ex.key}', 'equipmentLocation', this.value)">
-                                </div>
-                            </div>
-                        `}).join('')}
+                        ${w.exercises.map(ex => renderExerciseItem(w, ex)).join('')}
                     </div>
                 </div>
             `).join('');
+        }
+
+        // Render flat list when filtering by specific exercise
+        function renderExerciseList(exerciseName, searchTerm, locationFilter) {
+            const listEl = document.getElementById('workout-list');
+
+            // Collect all instances of this exercise across workouts
+            const exerciseInstances = [];
+
+            allWorkouts.forEach(w => {
+                // Apply location filter
+                if (locationFilter && w.location !== locationFilter) return;
+
+                w.exercises.forEach(ex => {
+                    if (ex.name === exerciseName) {
+                        // Apply search filter to notes/equipment
+                        if (searchTerm) {
+                            const matchesSearch =
+                                ex.equipment?.toLowerCase().includes(searchTerm) ||
+                                ex.notes?.toLowerCase().includes(searchTerm) ||
+                                w.location?.toLowerCase().includes(searchTerm);
+                            if (!matchesSearch) return;
+                        }
+
+                        exerciseInstances.push({
+                            ...ex,
+                            docId: w.docId,
+                            date: w.date,
+                            workoutType: w.workoutType,
+                            workoutLocation: w.location
+                        });
+                    }
+                });
+            });
+
+            if (exerciseInstances.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>No exercises found</p></div>';
+                return;
+            }
+
+            // Sort by date descending
+            exerciseInstances.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            listEl.innerHTML = `
+                <div class="exercise-filter-header">
+                    <h3><i class="fas fa-dumbbell"></i> ${exerciseName}</h3>
+                    <span class="exercise-count">${exerciseInstances.length} instances</span>
+                </div>
+                ${exerciseInstances.map(ex => {
+                    const selKey = `${ex.docId}|${ex.key}`;
+                    const isSelected = selectedExercises.has(selKey);
+                    return `
+                    <div class="exercise-instance ${isSelected ? 'selected' : ''}" data-sel-key="${selKey}">
+                        <div class="instance-header">
+                            <input type="checkbox"
+                                class="exercise-checkbox"
+                                ${isSelected ? 'checked' : ''}
+                                onchange="toggleExerciseSelection('${ex.docId}', '${ex.key}', '${ex.name.replace(/'/g, "\\'")}', this.checked)">
+                            <div class="instance-date">${formatDate(ex.date)}</div>
+                            <div class="instance-workout">${ex.workoutType || 'Workout'}</div>
+                            <div class="instance-location">${ex.workoutLocation || '(no location)'}</div>
+                        </div>
+                        <div class="instance-fields">
+                            <div class="exercise-field">
+                                <label>Equipment</label>
+                                <input type="text"
+                                    value="${ex.equipment || ''}"
+                                    placeholder="Enter equipment..."
+                                    onchange="updateExerciseField('${ex.docId}', '${ex.key}', 'equipment', this.value)">
+                            </div>
+                            <div class="exercise-field">
+                                <label>Equipment Location</label>
+                                <input type="text"
+                                    value="${ex.equipmentLocation || ''}"
+                                    placeholder="Enter location..."
+                                    onchange="updateExerciseField('${ex.docId}', '${ex.key}', 'equipmentLocation', this.value)">
+                            </div>
+                            <div class="exercise-field sets-field">
+                                <label>Sets</label>
+                                <span>${ex.sets || 0}</span>
+                            </div>
+                        </div>
+                        ${ex.notes ? `<div class="instance-notes"><i class="fas fa-sticky-note"></i> ${escapeHtml(ex.notes)}</div>` : ''}
+                    </div>
+                `}).join('')}
+            `;
+        }
+
+        function renderExerciseItem(w, ex) {
+            const selKey = `${w.docId}|${ex.key}`;
+            const isSelected = selectedExercises.has(selKey);
+            return `
+                <div class="exercise-item ${isSelected ? 'selected' : ''}" data-sel-key="${selKey}">
+                    <input type="checkbox"
+                        class="exercise-checkbox"
+                        ${isSelected ? 'checked' : ''}
+                        onchange="toggleExerciseSelection('${w.docId}', '${ex.key}', '${ex.name.replace(/'/g, "\\'")}', this.checked)">
+                    <div class="exercise-name">${ex.name} ${ex.sets > 0 ? `(${ex.sets} sets)` : ''}</div>
+                    <div class="exercise-field">
+                        <label>Equipment</label>
+                        <input type="text"
+                            value="${ex.equipment || ''}"
+                            placeholder="Enter equipment..."
+                            onchange="updateExerciseField('${w.docId}', '${ex.key}', 'equipment', this.value)">
+                    </div>
+                    <div class="exercise-field">
+                        <label>Equipment Location</label>
+                        <input type="text"
+                            value="${ex.equipmentLocation || ''}"
+                            placeholder="Enter location..."
+                            onchange="updateExerciseField('${w.docId}', '${ex.key}', 'equipmentLocation', this.value)">
+                    </div>
+                </div>
+                ${ex.notes ? `<div class="exercise-notes"><i class="fas fa-sticky-note"></i> ${escapeHtml(ex.notes)}</div>` : ''}
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function formatDate(dateStr) {
