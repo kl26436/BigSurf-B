@@ -159,7 +159,7 @@
             border: 1px solid var(--border);
         }
 
-        .workout-card.editing {
+        .workout-card.selected {
             border-color: var(--primary);
             box-shadow: 0 0 20px rgba(29,211,176,0.1);
         }
@@ -213,7 +213,7 @@
 
         .exercise-item {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
+            grid-template-columns: auto 1fr 1fr 1fr;
             gap: 12px;
             align-items: center;
             padding: 10px;
@@ -221,11 +221,26 @@
             border-radius: 8px;
         }
 
+        .exercise-item.selected {
+            background: rgba(29,211,176,0.1);
+            border: 1px solid var(--primary);
+        }
+
         @media (max-width: 768px) {
             .exercise-item {
-                grid-template-columns: 1fr;
+                grid-template-columns: auto 1fr;
                 gap: 8px;
             }
+            .exercise-field {
+                grid-column: 2;
+            }
+        }
+
+        .exercise-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
         }
 
         .exercise-name {
@@ -256,13 +271,6 @@
         .exercise-field input:focus {
             outline: none;
             border-color: var(--primary);
-        }
-
-        .workout-actions {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-            justify-content: flex-end;
         }
 
         /* Loading */
@@ -334,7 +342,7 @@
 
         .bulk-form {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 12px;
             align-items: end;
         }
@@ -356,6 +364,62 @@
             border: 1px solid var(--border);
             background: var(--bg-card-hi);
             color: var(--text-strong);
+        }
+
+        /* Selection Actions Bar */
+        .selection-bar {
+            background: var(--primary);
+            color: #000;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .selection-bar.visible {
+            display: flex;
+        }
+
+        .selection-bar .selection-count {
+            font-weight: 600;
+        }
+
+        .selection-bar .selection-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .selection-bar input {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            background: rgba(0,0,0,0.2);
+            color: #000;
+            font-weight: 500;
+            width: 150px;
+        }
+
+        .selection-bar input::placeholder {
+            color: rgba(0,0,0,0.5);
+        }
+
+        .selection-bar button {
+            background: rgba(0,0,0,0.2);
+            color: #000;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .selection-bar button:hover {
+            background: rgba(0,0,0,0.3);
         }
 
         /* Back link */
@@ -404,11 +468,18 @@
                     <div class="stat-value" id="missing-equipment">0</div>
                     <div class="stat-label">Missing Equipment</div>
                 </div>
+                <div class="stat">
+                    <div class="stat-value" id="unique-exercises">0</div>
+                    <div class="stat-label">Unique Exercises</div>
+                </div>
             </div>
 
             <!-- Filters -->
             <div class="filters">
                 <input type="text" id="search-input" placeholder="Search workouts...">
+                <select id="exercise-filter">
+                    <option value="">All Exercises</option>
+                </select>
                 <select id="location-filter">
                     <option value="">All Locations</option>
                 </select>
@@ -422,13 +493,26 @@
                 </button>
             </div>
 
+            <!-- Selection Actions Bar -->
+            <div id="selection-bar" class="selection-bar">
+                <span class="selection-count"><span id="selected-count">0</span> exercises selected</span>
+                <div class="selection-actions">
+                    <input type="text" id="bulk-equipment-input" placeholder="Equipment name">
+                    <input type="text" id="bulk-location-input" placeholder="Location (optional)">
+                    <button onclick="applyToSelected()"><i class="fas fa-check"></i> Apply</button>
+                    <button onclick="clearSelection()"><i class="fas fa-times"></i> Clear</button>
+                </div>
+            </div>
+
             <!-- Bulk Actions -->
             <div class="bulk-actions">
-                <h3><i class="fas fa-bolt"></i> Bulk Update Equipment</h3>
+                <h3><i class="fas fa-bolt"></i> Bulk Update by Exercise Name</h3>
                 <div class="bulk-form">
                     <div class="form-group">
                         <label>Exercise Name</label>
-                        <input type="text" id="bulk-exercise" placeholder="e.g., Bench Press">
+                        <select id="bulk-exercise">
+                            <option value="">Select exercise...</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label>Old Equipment (optional)</label>
@@ -497,6 +581,8 @@
         let currentUser = null;
         let allWorkouts = [];
         let locations = new Set();
+        let exerciseNames = new Set();
+        let selectedExercises = new Map(); // Map of "docId|exerciseKey" -> exercise data
 
         // Auth state
         onAuthStateChanged(auth, (user) => {
@@ -546,28 +632,40 @@
 
                 allWorkouts = [];
                 locations = new Set();
+                exerciseNames = new Set();
 
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
                     const exercises = [];
                     let missingEquipment = false;
 
-                    // Extract exercises
+                    // Extract exercises - check multiple sources for the name
                     if (data.exercises) {
                         Object.entries(data.exercises).forEach(([key, ex]) => {
-                            const equipment = ex.equipment ||
-                                data.originalWorkout?.exercises?.[parseInt(key.replace('exercise_', ''))]?.equipment ||
-                                null;
+                            const idx = parseInt(key.replace('exercise_', ''));
+                            const originalEx = data.originalWorkout?.exercises?.[idx];
+
+                            // Get name from multiple possible sources
+                            const name = ex.name ||
+                                         originalEx?.machine ||
+                                         originalEx?.name ||
+                                         data.exerciseNames?.[key] ||
+                                         'Unknown';
+
+                            // Get equipment from multiple sources
+                            const equipment = ex.equipment || originalEx?.equipment || null;
 
                             if (!equipment && ex.sets?.length > 0) {
                                 missingEquipment = true;
                             }
 
+                            exerciseNames.add(name);
+
                             exercises.push({
                                 key,
-                                name: ex.name || 'Unknown',
+                                name: name,
                                 equipment: equipment,
-                                equipmentLocation: ex.equipmentLocation || null,
+                                equipmentLocation: ex.equipmentLocation || originalEx?.equipmentLocation || null,
                                 sets: ex.sets?.length || 0
                             });
                         });
@@ -589,7 +687,7 @@
                 });
 
                 updateStats();
-                populateLocationFilter();
+                populateFilters();
                 renderWorkouts();
 
             } catch (error) {
@@ -602,19 +700,36 @@
             document.getElementById('total-workouts').textContent = allWorkouts.length;
             document.getElementById('missing-location').textContent = allWorkouts.filter(w => w.missingLocation).length;
             document.getElementById('missing-equipment').textContent = allWorkouts.filter(w => w.missingEquipment).length;
+            document.getElementById('unique-exercises').textContent = exerciseNames.size;
         }
 
-        function populateLocationFilter() {
-            const select = document.getElementById('location-filter');
-            select.innerHTML = '<option value="">All Locations</option>';
+        function populateFilters() {
+            // Location filter
+            const locSelect = document.getElementById('location-filter');
+            locSelect.innerHTML = '<option value="">All Locations</option>';
             [...locations].sort().forEach(loc => {
-                select.innerHTML += `<option value="${loc}">${loc}</option>`;
+                locSelect.innerHTML += `<option value="${loc}">${loc}</option>`;
+            });
+
+            // Exercise filter
+            const exSelect = document.getElementById('exercise-filter');
+            exSelect.innerHTML = '<option value="">All Exercises</option>';
+            [...exerciseNames].sort().forEach(name => {
+                exSelect.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+
+            // Bulk exercise dropdown
+            const bulkSelect = document.getElementById('bulk-exercise');
+            bulkSelect.innerHTML = '<option value="">Select exercise...</option>';
+            [...exerciseNames].sort().forEach(name => {
+                bulkSelect.innerHTML += `<option value="${name}">${name}</option>`;
             });
         }
 
         function renderWorkouts() {
             const listEl = document.getElementById('workout-list');
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const exerciseFilter = document.getElementById('exercise-filter').value;
             const locationFilter = document.getElementById('location-filter').value;
             const statusFilter = document.getElementById('status-filter').value;
 
@@ -627,6 +742,12 @@
                         w.location?.toLowerCase().includes(searchTerm) ||
                         w.exercises.some(ex => ex.name?.toLowerCase().includes(searchTerm));
                     if (!searchMatch) return false;
+                }
+
+                // Exercise filter
+                if (exerciseFilter) {
+                    const hasExercise = w.exercises.some(ex => ex.name === exerciseFilter);
+                    if (!hasExercise) return false;
                 }
 
                 // Location filter
@@ -667,8 +788,15 @@
                     </div>
 
                     <div class="exercise-list">
-                        ${w.exercises.map(ex => `
-                            <div class="exercise-item">
+                        ${w.exercises.map(ex => {
+                            const selKey = `${w.docId}|${ex.key}`;
+                            const isSelected = selectedExercises.has(selKey);
+                            return `
+                            <div class="exercise-item ${isSelected ? 'selected' : ''}" data-sel-key="${selKey}">
+                                <input type="checkbox"
+                                    class="exercise-checkbox"
+                                    ${isSelected ? 'checked' : ''}
+                                    onchange="toggleExerciseSelection('${w.docId}', '${ex.key}', '${ex.name.replace(/'/g, "\\'")}', this.checked)">
                                 <div class="exercise-name">${ex.name} ${ex.sets > 0 ? `(${ex.sets} sets)` : ''}</div>
                                 <div class="exercise-field">
                                     <label>Equipment</label>
@@ -685,7 +813,7 @@
                                         onchange="updateExerciseField('${w.docId}', '${ex.key}', 'equipmentLocation', this.value)">
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>
             `).join('');
@@ -696,6 +824,85 @@
             const date = new Date(dateStr + 'T12:00:00');
             return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
         }
+
+        // Selection management
+        window.toggleExerciseSelection = (docId, exerciseKey, exerciseName, isSelected) => {
+            const selKey = `${docId}|${exerciseKey}`;
+            if (isSelected) {
+                selectedExercises.set(selKey, { docId, exerciseKey, exerciseName });
+            } else {
+                selectedExercises.delete(selKey);
+            }
+            updateSelectionBar();
+
+            // Update visual state
+            const item = document.querySelector(`[data-sel-key="${selKey}"]`);
+            if (item) {
+                item.classList.toggle('selected', isSelected);
+            }
+        };
+
+        function updateSelectionBar() {
+            const bar = document.getElementById('selection-bar');
+            const count = selectedExercises.size;
+            document.getElementById('selected-count').textContent = count;
+            bar.classList.toggle('visible', count > 0);
+        }
+
+        window.clearSelection = () => {
+            selectedExercises.clear();
+            updateSelectionBar();
+            document.querySelectorAll('.exercise-checkbox').forEach(cb => cb.checked = false);
+            document.querySelectorAll('.exercise-item').forEach(item => item.classList.remove('selected'));
+        };
+
+        window.applyToSelected = async () => {
+            const equipment = document.getElementById('bulk-equipment-input').value.trim();
+            const location = document.getElementById('bulk-location-input').value.trim();
+
+            if (!equipment) {
+                showToast('Enter equipment name', true);
+                return;
+            }
+
+            const count = selectedExercises.size;
+            if (count === 0) {
+                showToast('No exercises selected', true);
+                return;
+            }
+
+            const confirm = window.confirm(`Update ${count} selected exercise(s) to:\nEquipment: ${equipment}${location ? `\nLocation: ${location}` : ''}\n\nContinue?`);
+            if (!confirm) return;
+
+            try {
+                // Group by docId for efficiency
+                const byDoc = {};
+                selectedExercises.forEach((data, key) => {
+                    if (!byDoc[data.docId]) byDoc[data.docId] = [];
+                    byDoc[data.docId].push(data.exerciseKey);
+                });
+
+                for (const [docId, exerciseKeys] of Object.entries(byDoc)) {
+                    const updates = {};
+                    exerciseKeys.forEach(key => {
+                        updates[`exercises.${key}.equipment`] = equipment;
+                        if (location) {
+                            updates[`exercises.${key}.equipmentLocation`] = location;
+                        }
+                    });
+                    const docRef = doc(db, 'users', currentUser.uid, 'workouts', docId);
+                    await updateDoc(docRef, updates);
+                }
+
+                showToast(`Updated ${count} exercises!`);
+                clearSelection();
+                loadWorkouts();
+
+            } catch (error) {
+                console.error('Error applying to selected:', error);
+                showToast('Error updating', true);
+            }
+        };
 
         // Update workout location
         window.updateWorkoutField = async (docId, field, value) => {
@@ -710,7 +917,7 @@
                     workout.missingLocation = !workout.location;
                     if (value && field === 'location') {
                         locations.add(value);
-                        populateLocationFilter();
+                        populateFilters();
                     }
                 }
 
@@ -749,21 +956,33 @@
             }
         };
 
-        // Bulk update
+        // Bulk update by exercise name
         window.bulkUpdate = async () => {
-            const exerciseName = document.getElementById('bulk-exercise').value.trim();
+            const exerciseName = document.getElementById('bulk-exercise').value;
             const oldEquipment = document.getElementById('bulk-old-equipment').value.trim() || null;
             const newEquipment = document.getElementById('bulk-new-equipment').value.trim();
             const newLocation = document.getElementById('bulk-new-location').value.trim() || null;
 
             if (!exerciseName || !newEquipment) {
-                showToast('Enter exercise name and new equipment', true);
+                showToast('Select exercise and enter new equipment', true);
                 return;
             }
 
+            // Count how many will be affected
+            let affectedCount = 0;
+            allWorkouts.forEach(w => {
+                w.exercises.forEach(ex => {
+                    if (ex.name === exerciseName) {
+                        if (!oldEquipment || ex.equipment === oldEquipment) {
+                            affectedCount++;
+                        }
+                    }
+                });
+            });
+
             const confirm = window.confirm(
-                `Update all "${exerciseName}" exercises:\n` +
-                `From: ${oldEquipment || '(any)'}\n` +
+                `Update ${affectedCount} "${exerciseName}" exercises:\n` +
+                `From: ${oldEquipment || '(any equipment)'}\n` +
                 `To: ${newEquipment}${newLocation ? ` @ ${newLocation}` : ''}\n\n` +
                 `Continue?`
             );
@@ -771,7 +990,6 @@
             if (!confirm) return;
 
             try {
-                const exerciseNameLower = exerciseName.toLowerCase();
                 let updateCount = 0;
 
                 for (const workout of allWorkouts) {
@@ -779,7 +997,7 @@
                     const updates = {};
 
                     for (const ex of workout.exercises) {
-                        if (ex.name?.toLowerCase() === exerciseNameLower) {
+                        if (ex.name === exerciseName) {
                             if (!oldEquipment || ex.equipment === oldEquipment) {
                                 updates[`exercises.${ex.key}.equipment`] = newEquipment;
                                 if (newLocation) {
@@ -808,6 +1026,7 @@
 
         // Search/filter handlers
         document.getElementById('search-input').addEventListener('input', renderWorkouts);
+        document.getElementById('exercise-filter').addEventListener('change', renderWorkouts);
         document.getElementById('location-filter').addEventListener('change', renderWorkouts);
         document.getElementById('status-filter').addEventListener('change', renderWorkouts);
 
