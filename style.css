@@ -929,7 +929,11 @@ h1, h2, h3 { letter-spacing: -0.01em; }
    7. ACTIVE WORKOUT
    =========================================== */
 #active-workout {
-  padding: 16px;
+  padding: 0 16px 16px 16px;
+}
+#active-workout .section-header-row {
+  margin-left: -16px;
+  margin-right: -16px;
   padding-top: 16px;
 }
 

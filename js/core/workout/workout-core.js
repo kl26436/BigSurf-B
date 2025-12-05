@@ -1325,8 +1325,9 @@ export function closeExerciseModal() {
     }
 
     // Show nav again when exercise modal closes (if still in active workout)
+    // Keep header hidden (no logo) during active workout
     if (AppState.currentWorkout) {
-        setHeaderMode(true);
+        setHeaderMode(false);
         setBottomNavVisible(true);
     }
 
