@@ -134,7 +134,9 @@ import {
     forceCheckHistoryData, testHistoryFilters,
     fixWorkoutHistoryReference, emergencyFixFilters,
     debounce, setupErrorLogging, runAllDebugChecks,
-    cleanupDuplicateExercises, scanDuplicateExercises, mergeDuplicateExercises
+    cleanupDuplicateExercises, scanDuplicateExercises, mergeDuplicateExercises,
+    getWorkoutHistoryForEditing, updateWorkoutLocation, updateExerciseEquipment,
+    bulkUpdateEquipment, listAllEquipment, findIncompleteWorkouts
 } from './core/utils/debug-utilities.js';
 
 // Firebase Workout Manager (for exercise-manager.html)
@@ -553,6 +555,14 @@ window.runAllDebugChecks = runAllDebugChecks;
 window.cleanupDuplicateExercises = cleanupDuplicateExercises;
 window.scanDuplicateExercises = scanDuplicateExercises;
 window.mergeDuplicateExercises = mergeDuplicateExercises;
+
+// Workout history editor utilities
+window.getWorkoutHistoryForEditing = getWorkoutHistoryForEditing;
+window.updateWorkoutLocation = updateWorkoutLocation;
+window.updateExerciseEquipment = updateExerciseEquipment;
+window.bulkUpdateEquipment = bulkUpdateEquipment;
+window.listAllEquipment = listAllEquipment;
+window.findIncompleteWorkouts = findIncompleteWorkouts;
 
 // State access (for debugging)
 window.AppState = AppState;

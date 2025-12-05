@@ -962,3 +962,445 @@ export async function cleanupDuplicateExercises() {
         throw error;
     }
 }
+
+// ===================================================================
+// WORKOUT HISTORY EDITOR
+// ===================================================================
+
+/**
+ * Get all workouts with equipment/location data for editing
+ * Returns array of workout summaries with editable fields
+ */
+export async function getWorkoutHistoryForEditing() {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return [];
+    }
+
+    console.log('📋 Loading workout history for editing...\n');
+
+    try {
+        const { db, collection, getDocs, query, orderBy } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        const workoutsRef = collection(db, "users", uid, "workouts");
+        const q = query(workoutsRef, orderBy("date", "desc"));
+        const snapshot = await getDocs(q);
+
+        const workouts = [];
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const exercises = [];
+
+            // Extract exercise data
+            if (data.exercises) {
+                Object.entries(data.exercises).forEach(([key, ex]) => {
+                    exercises.push({
+                        key,
+                        name: ex.name || 'Unknown',
+                        equipment: ex.equipment || null,
+                        equipmentLocation: ex.equipmentLocation || null,
+                        sets: ex.sets?.length || 0
+                    });
+                });
+            }
+
+            // Also check originalWorkout.exercises for equipment
+            if (data.originalWorkout?.exercises) {
+                data.originalWorkout.exercises.forEach((ex, idx) => {
+                    const key = `exercise_${idx}`;
+                    const existing = exercises.find(e => e.key === key);
+                    if (existing) {
+                        // Merge equipment from originalWorkout if not already set
+                        if (!existing.equipment && ex.equipment) {
+                            existing.equipment = ex.equipment;
+                        }
+                        if (!existing.equipmentLocation && ex.equipmentLocation) {
+                            existing.equipmentLocation = ex.equipmentLocation;
+                        }
+                    }
+                });
+            }
+
+            workouts.push({
+                docId: docSnap.id,
+                date: data.date,
+                workoutType: data.workoutType,
+                location: data.location || null,
+                exercises,
+                status: data.completedAt ? 'completed' : (data.cancelledAt ? 'cancelled' : 'in-progress')
+            });
+        });
+
+        console.log(`Found ${workouts.length} workouts\n`);
+
+        // Display summary
+        workouts.slice(0, 10).forEach((w, i) => {
+            console.log(`${i + 1}. [${w.date}] ${w.workoutType}`);
+            console.log(`   Location: ${w.location || '(none)'}`);
+            w.exercises.forEach(ex => {
+                console.log(`   - ${ex.name}: ${ex.equipment || '(no equipment)'} @ ${ex.equipmentLocation || '(no location)'}`);
+            });
+            console.log('');
+        });
+
+        if (workouts.length > 10) {
+            console.log(`... and ${workouts.length - 10} more workouts`);
+        }
+
+        console.log('\n💡 Use updateWorkoutLocation(docId, location) to update workout location');
+        console.log('💡 Use updateExerciseEquipment(docId, exerciseKey, equipment, location) to update exercise equipment');
+        console.log('💡 Use bulkUpdateEquipment(exerciseName, oldEquipment, newEquipment, newLocation) for bulk updates');
+
+        // Store for easy access
+        window._workoutHistory = workouts;
+        return workouts;
+
+    } catch (error) {
+        console.error('❌ Error loading history:', error);
+        throw error;
+    }
+}
+
+/**
+ * Update workout location
+ */
+export async function updateWorkoutLocation(docId, newLocation) {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return false;
+    }
+
+    try {
+        const { db, doc, updateDoc } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        const docRef = doc(db, "users", uid, "workouts", docId);
+        await updateDoc(docRef, { location: newLocation });
+
+        console.log(`✅ Updated workout ${docId} location to: ${newLocation}`);
+        return true;
+
+    } catch (error) {
+        console.error('❌ Error updating location:', error);
+        return false;
+    }
+}
+
+/**
+ * Update exercise equipment in a specific workout
+ */
+export async function updateExerciseEquipment(docId, exerciseKey, newEquipment, newLocation = null) {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return false;
+    }
+
+    try {
+        const { db, doc, getDoc, updateDoc } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        const docRef = doc(db, "users", uid, "workouts", docId);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            console.log('❌ Workout not found');
+            return false;
+        }
+
+        const data = docSnap.data();
+        const updates = {};
+
+        // Update in exercises object
+        if (data.exercises?.[exerciseKey]) {
+            updates[`exercises.${exerciseKey}.equipment`] = newEquipment;
+            if (newLocation) {
+                updates[`exercises.${exerciseKey}.equipmentLocation`] = newLocation;
+            }
+        }
+
+        // Also update in originalWorkout.exercises if it exists
+        if (data.originalWorkout?.exercises) {
+            const idx = parseInt(exerciseKey.replace('exercise_', ''));
+            if (data.originalWorkout.exercises[idx]) {
+                const updatedOriginal = [...data.originalWorkout.exercises];
+                updatedOriginal[idx] = {
+                    ...updatedOriginal[idx],
+                    equipment: newEquipment,
+                    ...(newLocation && { equipmentLocation: newLocation })
+                };
+                updates['originalWorkout.exercises'] = updatedOriginal;
+            }
+        }
+
+        await updateDoc(docRef, updates);
+
+        console.log(`✅ Updated ${exerciseKey} in workout ${docId}`);
+        console.log(`   Equipment: ${newEquipment}`);
+        if (newLocation) console.log(`   Location: ${newLocation}`);
+
+        return true;
+
+    } catch (error) {
+        console.error('❌ Error updating equipment:', error);
+        return false;
+    }
+}
+
+/**
+ * Bulk update equipment across all workouts
+ * Finds all exercises matching exerciseName with oldEquipment and updates to newEquipment
+ */
+export async function bulkUpdateEquipment(exerciseName, oldEquipment, newEquipment, newLocation = null) {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return { updated: 0 };
+    }
+
+    const confirm = window.confirm(
+        `This will update all "${exerciseName}" exercises\n` +
+        `FROM: ${oldEquipment || '(any)'}\n` +
+        `TO: ${newEquipment}${newLocation ? ` @ ${newLocation}` : ''}\n\n` +
+        `Continue?`
+    );
+
+    if (!confirm) {
+        console.log('Cancelled');
+        return { updated: 0 };
+    }
+
+    console.log(`🔄 Bulk updating "${exerciseName}" equipment...\n`);
+
+    try {
+        const { db, collection, getDocs, doc, getDoc, updateDoc } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        const workoutsRef = collection(db, "users", uid, "workouts");
+        const snapshot = await getDocs(workoutsRef);
+
+        let updateCount = 0;
+        const exerciseNameLower = exerciseName.toLowerCase();
+
+        for (const docSnap of snapshot.docs) {
+            const data = docSnap.data();
+            let needsUpdate = false;
+            const updates = {};
+
+            // Check exercises object
+            if (data.exercises) {
+                for (const [key, ex] of Object.entries(data.exercises)) {
+                    const exName = (ex.name || '').toLowerCase();
+                    const exEquip = ex.equipment || null;
+
+                    if (exName === exerciseNameLower && (!oldEquipment || exEquip === oldEquipment)) {
+                        updates[`exercises.${key}.equipment`] = newEquipment;
+                        if (newLocation) {
+                            updates[`exercises.${key}.equipmentLocation`] = newLocation;
+                        }
+                        needsUpdate = true;
+                    }
+                }
+            }
+
+            // Check originalWorkout.exercises
+            if (data.originalWorkout?.exercises) {
+                const updatedOriginal = data.originalWorkout.exercises.map((ex, idx) => {
+                    const exName = (ex.machine || ex.name || '').toLowerCase();
+                    const exEquip = ex.equipment || null;
+
+                    if (exName === exerciseNameLower && (!oldEquipment || exEquip === oldEquipment)) {
+                        needsUpdate = true;
+                        return {
+                            ...ex,
+                            equipment: newEquipment,
+                            ...(newLocation && { equipmentLocation: newLocation })
+                        };
+                    }
+                    return ex;
+                });
+
+                if (needsUpdate) {
+                    updates['originalWorkout.exercises'] = updatedOriginal;
+                }
+            }
+
+            if (needsUpdate) {
+                const docRef = doc(db, "users", uid, "workouts", docSnap.id);
+                await updateDoc(docRef, updates);
+                updateCount++;
+                console.log(`  ✓ Updated workout ${data.date} - ${data.workoutType}`);
+            }
+        }
+
+        console.log(`\n✅ Updated ${updateCount} workout(s)`);
+        showNotification(`Updated ${updateCount} workout(s)`, 'success');
+
+        return { updated: updateCount };
+
+    } catch (error) {
+        console.error('❌ Error in bulk update:', error);
+        showNotification('Error updating workouts', 'error');
+        throw error;
+    }
+}
+
+/**
+ * List all unique equipment names used across workouts
+ */
+export async function listAllEquipment() {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return {};
+    }
+
+    console.log('📋 Scanning all equipment in workout history...\n');
+
+    try {
+        const { db, collection, getDocs } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        const workoutsRef = collection(db, "users", uid, "workouts");
+        const snapshot = await getDocs(workoutsRef);
+
+        // Map: exerciseName -> Set of equipment names
+        const equipmentByExercise = {};
+        // Map: location -> count
+        const locationCounts = {};
+
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+
+            // Track workout location
+            if (data.location) {
+                locationCounts[data.location] = (locationCounts[data.location] || 0) + 1;
+            }
+
+            // Check exercises
+            if (data.exercises) {
+                Object.values(data.exercises).forEach(ex => {
+                    const name = ex.name || 'Unknown';
+                    if (!equipmentByExercise[name]) {
+                        equipmentByExercise[name] = new Set();
+                    }
+                    if (ex.equipment) {
+                        equipmentByExercise[name].add(ex.equipment);
+                    }
+                });
+            }
+
+            // Check originalWorkout.exercises
+            if (data.originalWorkout?.exercises) {
+                data.originalWorkout.exercises.forEach(ex => {
+                    const name = ex.machine || ex.name || 'Unknown';
+                    if (!equipmentByExercise[name]) {
+                        equipmentByExercise[name] = new Set();
+                    }
+                    if (ex.equipment) {
+                        equipmentByExercise[name].add(ex.equipment);
+                    }
+                });
+            }
+        });
+
+        // Convert Sets to Arrays and sort
+        const result = {};
+        Object.keys(equipmentByExercise).sort().forEach(exercise => {
+            const equipment = [...equipmentByExercise[exercise]].sort();
+            if (equipment.length > 0) {
+                result[exercise] = equipment;
+            }
+        });
+
+        console.log('=== Equipment by Exercise ===\n');
+        Object.entries(result).forEach(([exercise, equipment]) => {
+            console.log(`${exercise}:`);
+            equipment.forEach(eq => console.log(`  - ${eq}`));
+        });
+
+        console.log('\n=== Workout Locations ===\n');
+        Object.entries(locationCounts)
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([location, count]) => {
+                console.log(`${location}: ${count} workouts`);
+            });
+
+        return { equipmentByExercise: result, locationCounts };
+
+    } catch (error) {
+        console.error('❌ Error listing equipment:', error);
+        throw error;
+    }
+}
+
+/**
+ * Find workouts missing equipment or location data
+ */
+export async function findIncompleteWorkouts() {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return [];
+    }
+
+    console.log('🔍 Finding workouts with missing equipment/location...\n');
+
+    try {
+        const { db, collection, getDocs, query, orderBy } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        const workoutsRef = collection(db, "users", uid, "workouts");
+        const q = query(workoutsRef, orderBy("date", "desc"));
+        const snapshot = await getDocs(q);
+
+        const incomplete = [];
+
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            const issues = [];
+
+            // Check workout location
+            if (!data.location) {
+                issues.push('Missing workout location');
+            }
+
+            // Check exercises for missing equipment
+            const missingEquipment = [];
+            if (data.exercises) {
+                Object.entries(data.exercises).forEach(([key, ex]) => {
+                    if (!ex.equipment && ex.sets?.length > 0) {
+                        missingEquipment.push(ex.name || key);
+                    }
+                });
+            }
+
+            if (missingEquipment.length > 0) {
+                issues.push(`Missing equipment: ${missingEquipment.join(', ')}`);
+            }
+
+            if (issues.length > 0) {
+                incomplete.push({
+                    docId: docSnap.id,
+                    date: data.date,
+                    workoutType: data.workoutType,
+                    issues
+                });
+            }
+        });
+
+        console.log(`Found ${incomplete.length} incomplete workout(s)\n`);
+
+        incomplete.slice(0, 20).forEach((w, i) => {
+            console.log(`${i + 1}. [${w.date}] ${w.workoutType} (${w.docId})`);
+            w.issues.forEach(issue => console.log(`   ⚠️ ${issue}`));
+        });
+
+        if (incomplete.length > 20) {
+            console.log(`\n... and ${incomplete.length - 20} more`);
+        }
+
+        return incomplete;
+
+    } catch (error) {
+        console.error('❌ Error finding incomplete workouts:', error);
+        throw error;
+    }
+}
