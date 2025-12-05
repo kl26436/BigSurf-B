@@ -231,6 +231,14 @@
                 </div>
 
                 <div class="location-management-content">
+                    <!-- Map Container -->
+                    <div id="location-map-container" class="location-map-container">
+                        <div class="location-map-placeholder">
+                            <i class="fas fa-map-marked-alt"></i>
+                            <span>Select a location to view on map</span>
+                        </div>
+                    </div>
+
                     <!-- Saved Locations List -->
                     <div id="location-management-list" class="location-management-list">
                         <!-- Populated dynamically -->
@@ -1379,7 +1387,7 @@
     <script>
         (async function() {
             if ('serviceWorker' in navigator) {
-                const REQUIRED_VERSION = 'v4.50';
+                const REQUIRED_VERSION = 'v4.51';
                 const regs = await navigator.serviceWorker.getRegistrations();
                 for (const reg of regs) {
                     // Check if cache is outdated

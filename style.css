@@ -3272,6 +3272,7 @@ input[type="number"] { -moz-appearance: textfield; }
   height: 200px;
   margin-bottom: 20px;
   overflow: hidden;
+  position: relative;
 }
 .location-map-placeholder {
   height: 100%;
@@ -3283,6 +3284,17 @@ input[type="number"] { -moz-appearance: textfield; }
 }
 .location-map-placeholder i { font-size: 2rem; margin-bottom: 8px; }
 .map-hint { font-size: 0.8rem; }
+.map-location-label {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
 
 .location-list-header {
   display: flex;
@@ -3517,9 +3529,50 @@ input[type="number"] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 10px 14px;
   background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
+  gap: 12px;
+}
+.equipment-location-item .location-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  flex: 1;
+  min-width: 0;
+}
+.equipment-location-item .location-name i {
+  color: var(--primary);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.equipment-location-item .remove-location-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+.equipment-location-item .remove-location-btn:hover {
+  background: rgba(255, 82, 82, 0.15);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.equipment-locations-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 .equipment-add-location-form { margin-top: 12px; }
 
