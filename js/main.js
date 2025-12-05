@@ -121,7 +121,8 @@ import {
 // Stats functionality
 import {
     showStats, closeStats, toggleStatsSection, togglePRBodyPart,
-    filterPRs, clearPRFilters
+    filterPRs, clearPRFilters, selectProgressExercise, setProgressTimeRange,
+    selectProgressCategory, selectProgressExerciseName
 } from './core/ui/stats-ui.js';
 
 // PR Migration (one-time utility)
@@ -132,7 +133,8 @@ import {
     debugManualWorkoutDate, debugFirebaseWorkoutDates, debugWeeklyStats,
     forceCheckHistoryData, testHistoryFilters,
     fixWorkoutHistoryReference, emergencyFixFilters,
-    debounce, setupErrorLogging, runAllDebugChecks
+    debounce, setupErrorLogging, runAllDebugChecks,
+    cleanupDuplicateExercises, scanDuplicateExercises, mergeDuplicateExercises
 } from './core/utils/debug-utilities.js';
 
 // Firebase Workout Manager (for exercise-manager.html)
@@ -358,6 +360,10 @@ window.toggleStatsSection = toggleStatsSection;
 window.togglePRBodyPart = togglePRBodyPart;
 window.filterPRs = filterPRs;
 window.clearPRFilters = clearPRFilters;
+window.selectProgressExercise = selectProgressExercise;
+window.setProgressTimeRange = setProgressTimeRange;
+window.selectProgressCategory = selectProgressCategory;
+window.selectProgressExerciseName = selectProgressExerciseName;
 
 // Template Selection Functions
 window.showTemplateSelection = showTemplateSelection;
@@ -545,6 +551,9 @@ window.testHistoryFilters = testHistoryFilters;
 window.fixWorkoutHistoryReference = fixWorkoutHistoryReference;
 window.emergencyFixFilters = emergencyFixFilters;
 window.runAllDebugChecks = runAllDebugChecks;
+window.cleanupDuplicateExercises = cleanupDuplicateExercises;
+window.scanDuplicateExercises = scanDuplicateExercises;
+window.mergeDuplicateExercises = mergeDuplicateExercises;
 
 // State access (for debugging)
 window.AppState = AppState;

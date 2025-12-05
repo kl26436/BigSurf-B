@@ -329,14 +329,24 @@ export class FirebaseWorkoutManager {
         try {
             const exercisesRef = collection(this.db, 'exercises');
             const querySnapshot = await getDocs(exercisesRef);
-            
+
             const exercises = [];
+            const seenNames = new Set(); // Track names to filter duplicates
+
             querySnapshot.forEach((doc) => {
                 if (doc.id !== 'default') { // Skip metadata
                     const data = doc.data();
                     if (data.name || data.machine) { // Validate exercise
-                        exercises.push({ 
-                            id: doc.id, 
+                        const name = (data.name || data.machine).toLowerCase();
+
+                        // Skip if we've already seen this exercise name (dedup)
+                        if (seenNames.has(name)) {
+                            return;
+                        }
+                        seenNames.add(name);
+
+                        exercises.push({
+                            id: doc.id,
                             name: data.name || data.machine,
                             machine: data.machine || data.name,
                             bodyPart: data.bodyPart || 'General',
@@ -390,12 +400,25 @@ export class FirebaseWorkoutManager {
         if (!this.appState.currentUser) {
             throw new Error('Must be signed in to save custom exercises');
         }
-        
+
         try {
-            const exerciseId = isEditing && exerciseData.id ? 
-                exerciseData.id : 
+            // Check for existing exercise with same name (to prevent duplicates)
+            if (!isEditing) {
+                const existingExercises = await this.getCustomExercises();
+                const existingByName = existingExercises.find(ex =>
+                    ex.name?.toLowerCase() === exerciseData.name?.toLowerCase()
+                );
+                if (existingByName) {
+                    // Update existing instead of creating duplicate
+                    console.log('📊 Found existing custom exercise, updating instead of creating duplicate');
+                    return await this.saveCustomExercise({ ...exerciseData, id: existingByName.id }, true);
+                }
+            }
+
+            const exerciseId = isEditing && exerciseData.id ?
+                exerciseData.id :
                 `custom_${exerciseData.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_${Date.now()}`;
-                
+
             const docRef = doc(this.db, "users", this.appState.currentUser.uid, "customExercises", exerciseId);
             
             const exerciseToSave = {

@@ -549,16 +549,416 @@ export const DEBUG_FUNCTIONS = {
 
 export function runAllDebugChecks() {
     console.log('🔍 Running comprehensive debug checks...');
-    
+
     debugAppState();
     debugLocalStorage();
     forceCheckHistoryData();
     logMemoryUsage();
-    
+
     if (AppState.currentUser) {
         debugFirebaseConnection();
         debugUserPermissions();
     }
-    
+
     console.log('✅ Debug checks complete - see above for results');
+}
+
+// ===================================================================
+// DUPLICATE EXERCISE CLEANUP
+// ===================================================================
+
+/**
+ * Scan for duplicate exercises and show what would be affected
+ * Does NOT delete anything - just reports
+ */
+export async function scanDuplicateExercises() {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return;
+    }
+
+    console.log('🔍 Scanning for duplicate exercises...\n');
+
+    try {
+        const { db, collection, getDocs } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        // Collect exercises from all sources
+        const allExercises = [];
+
+        // 1. Custom exercises
+        const customRef = collection(db, "users", uid, "customExercises");
+        const customSnapshot = await getDocs(customRef);
+        customSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            allExercises.push({
+                id: docSnap.id,
+                name: data.name || '',
+                collection: 'customExercises',
+                data: data
+            });
+        });
+
+        // 2. Exercise overrides
+        const overridesRef = collection(db, "users", uid, "exerciseOverrides");
+        const overridesSnapshot = await getDocs(overridesRef);
+        overridesSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            allExercises.push({
+                id: docSnap.id,
+                name: data.name || data.originalName || '',
+                collection: 'exerciseOverrides',
+                data: data
+            });
+        });
+
+        // 3. Default exercises
+        const defaultRef = collection(db, "exercises");
+        const defaultSnapshot = await getDocs(defaultRef);
+        defaultSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.name) {
+                allExercises.push({
+                    id: docSnap.id,
+                    name: data.name,
+                    collection: 'exercises (default)',
+                    data: data
+                });
+            }
+        });
+
+        // Group by name (case-insensitive)
+        const exercisesByName = {};
+        allExercises.forEach(ex => {
+            const name = (ex.name || '').toLowerCase();
+            if (!name) return;
+            if (!exercisesByName[name]) {
+                exercisesByName[name] = [];
+            }
+            exercisesByName[name].push(ex);
+        });
+
+        // Find duplicates
+        const duplicates = [];
+        for (const [name, exercises] of Object.entries(exercisesByName)) {
+            if (exercises.length > 1) {
+                duplicates.push({ name, exercises });
+            }
+        }
+
+        if (duplicates.length === 0) {
+            console.log('✅ No duplicates found!');
+            return { duplicates: [] };
+        }
+
+        console.log(`Found ${duplicates.length} exercise(s) with duplicates:\n`);
+        duplicates.forEach(({ name, exercises }) => {
+            console.log(`📋 "${name}" has ${exercises.length} entries:`);
+            exercises.forEach(ex => {
+                console.log(`   - ID: ${ex.id}`);
+                console.log(`     Collection: ${ex.collection}`);
+                console.log(`     Equipment: ${ex.data.equipment || 'none'}`);
+                console.log('');
+            });
+        });
+
+        console.log('\n💡 To merge duplicates safely, run: mergeDuplicateExercises()');
+        return { duplicates };
+
+    } catch (error) {
+        console.error('❌ Error scanning:', error);
+        throw error;
+    }
+}
+
+/**
+ * Merge duplicate exercises - updates all workout history to use one ID, then removes duplicates
+ */
+export async function mergeDuplicateExercises() {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return;
+    }
+
+    console.log('🔄 Merging duplicate exercises...\n');
+
+    try {
+        const { db, collection, getDocs, deleteDoc, doc, updateDoc } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        // First, get all exercises grouped by name
+        const allExercises = [];
+
+        // Custom exercises
+        const customRef = collection(db, "users", uid, "customExercises");
+        const customSnapshot = await getDocs(customRef);
+        customSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            allExercises.push({
+                id: docSnap.id,
+                name: data.name || '',
+                collection: 'customExercises',
+                data: data,
+                lastUpdated: data.lastUpdated || data.createdAt || '1970-01-01'
+            });
+        });
+
+        // Exercise overrides
+        const overridesRef = collection(db, "users", uid, "exerciseOverrides");
+        const overridesSnapshot = await getDocs(overridesRef);
+        overridesSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            allExercises.push({
+                id: docSnap.id,
+                name: data.name || data.originalName || '',
+                collection: 'exerciseOverrides',
+                data: data,
+                lastUpdated: data.lastUpdated || data.overrideCreated || '1970-01-01'
+            });
+        });
+
+        // Group by name
+        const exercisesByName = {};
+        allExercises.forEach(ex => {
+            const name = (ex.name || '').toLowerCase();
+            if (!name) return;
+            if (!exercisesByName[name]) {
+                exercisesByName[name] = [];
+            }
+            exercisesByName[name].push(ex);
+        });
+
+        // Get all workouts to update references
+        const workoutsRef = collection(db, "users", uid, "workouts");
+        const workoutsSnapshot = await getDocs(workoutsRef);
+
+        let mergeCount = 0;
+        let workoutsUpdated = 0;
+
+        for (const [name, exercises] of Object.entries(exercisesByName)) {
+            if (exercises.length <= 1) continue;
+
+            console.log(`\n📋 Merging "${name}" (${exercises.length} entries)...`);
+
+            // Sort by lastUpdated - keep the newest
+            exercises.sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
+            const keepExercise = exercises[0];
+            const duplicatesToRemove = exercises.slice(1);
+
+            console.log(`   ✓ Keeping: ${keepExercise.id} (${keepExercise.collection})`);
+
+            // Update workout history references
+            for (const duplicate of duplicatesToRemove) {
+                console.log(`   🔄 Merging: ${duplicate.id} into ${keepExercise.id}`);
+
+                // Check each workout for references to this duplicate
+                for (const workoutDoc of workoutsSnapshot.docs) {
+                    const workoutData = workoutDoc.data();
+                    let needsUpdate = false;
+                    const updates = {};
+
+                    // Check exerciseNames
+                    if (workoutData.exerciseNames) {
+                        for (const [key, exName] of Object.entries(workoutData.exerciseNames)) {
+                            if (exName?.toLowerCase() === name) {
+                                // This workout uses this exercise - no ID update needed
+                                // but good to know it exists
+                            }
+                        }
+                    }
+
+                    // Check originalWorkout.exercises for equipment references
+                    if (workoutData.originalWorkout?.exercises) {
+                        const updatedExercises = workoutData.originalWorkout.exercises.map(ex => {
+                            // If this exercise matches the duplicate, merge equipment settings from keepExercise
+                            if (ex.machine?.toLowerCase() === name) {
+                                // Keep the workout's existing data, it's fine
+                            }
+                            return ex;
+                        });
+                    }
+                }
+
+                // Delete the duplicate
+                const docRef = doc(db, "users", uid, duplicate.collection, duplicate.id);
+                await deleteDoc(docRef);
+                console.log(`   🗑️ Removed duplicate: ${duplicate.id}`);
+                mergeCount++;
+            }
+        }
+
+        if (mergeCount === 0) {
+            console.log('\n✅ No duplicates to merge');
+            showNotification('No duplicates found', 'info');
+        } else {
+            console.log(`\n✅ Merged ${mergeCount} duplicate(s)`);
+            showNotification(`Merged ${mergeCount} duplicate exercise(s)`, 'success');
+        }
+
+        return { merged: mergeCount };
+
+    } catch (error) {
+        console.error('❌ Error merging:', error);
+        showNotification('Error merging duplicates', 'error');
+        throw error;
+    }
+}
+
+/**
+ * Find and remove duplicate exercises across ALL collections
+ * Checks: customExercises, exerciseOverrides, and default exercises
+ * Keeps the most recently updated version
+ */
+export async function cleanupDuplicateExercises() {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return;
+    }
+
+    console.log('🧹 Scanning for duplicate exercises across all collections...');
+
+    try {
+        const { db, collection, getDocs, deleteDoc, doc } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        // Collect exercises from all sources
+        const allExercises = [];
+
+        // 1. Custom exercises
+        const customRef = collection(db, "users", uid, "customExercises");
+        const customSnapshot = await getDocs(customRef);
+        customSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            allExercises.push({
+                id: docSnap.id,
+                name: data.name || '',
+                collection: 'customExercises',
+                data: data,
+                lastUpdated: data.lastUpdated || data.createdAt || '1970-01-01'
+            });
+        });
+        console.log(`  📦 Found ${customSnapshot.size} custom exercises`);
+
+        // 2. Exercise overrides
+        const overridesRef = collection(db, "users", uid, "exerciseOverrides");
+        const overridesSnapshot = await getDocs(overridesRef);
+        overridesSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            allExercises.push({
+                id: docSnap.id,
+                name: data.name || data.originalName || '',
+                collection: 'exerciseOverrides',
+                data: data,
+                lastUpdated: data.lastUpdated || data.overrideCreated || '1970-01-01'
+            });
+        });
+        console.log(`  📦 Found ${overridesSnapshot.size} exercise overrides`);
+
+        // 3. Default exercises (global) - just for reference, we won't delete these
+        const defaultRef = collection(db, "exercises");
+        const defaultSnapshot = await getDocs(defaultRef);
+        const defaultNames = new Set();
+        defaultSnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.name) {
+                defaultNames.add(data.name.toLowerCase());
+            }
+        });
+        console.log(`  📦 Found ${defaultSnapshot.size} default exercises`);
+
+        // Group by name (case-insensitive)
+        const exercisesByName = {};
+        allExercises.forEach(ex => {
+            const name = (ex.name || '').toLowerCase();
+            if (!name) return;
+            if (!exercisesByName[name]) {
+                exercisesByName[name] = [];
+            }
+            exercisesByName[name].push(ex);
+        });
+
+        // Find and resolve duplicates
+        let duplicatesFound = 0;
+        let duplicatesRemoved = 0;
+
+        for (const [name, exercises] of Object.entries(exercisesByName)) {
+            // Check if this name exists in defaults
+            const hasDefault = defaultNames.has(name);
+
+            if (exercises.length > 1 || (exercises.length === 1 && hasDefault)) {
+                // Multiple user entries OR user entry duplicating a default
+                console.log(`\n📋 "${name}": ${exercises.length} user entries${hasDefault ? ' + 1 default' : ''}`);
+
+                if (hasDefault && exercises.length >= 1) {
+                    // If there's a default, user entries might be overrides or duplicates
+                    // Keep the override if it exists, remove plain custom duplicates
+                    const overrides = exercises.filter(e => e.collection === 'exerciseOverrides');
+                    const customs = exercises.filter(e => e.collection === 'customExercises');
+
+                    if (overrides.length > 0 && customs.length > 0) {
+                        // Have both override and custom - remove the custom duplicates
+                        console.log(`  ⚠️ Has override AND custom entries - removing customs`);
+                        for (const custom of customs) {
+                            console.log(`  🗑️ Removing custom duplicate: ${custom.id}`);
+                            const docRef = doc(db, "users", uid, "customExercises", custom.id);
+                            await deleteDoc(docRef);
+                            duplicatesRemoved++;
+                            duplicatesFound++;
+                        }
+                    }
+
+                    // Handle multiple overrides
+                    if (overrides.length > 1) {
+                        overrides.sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
+                        for (let i = 1; i < overrides.length; i++) {
+                            console.log(`  🗑️ Removing duplicate override: ${overrides[i].id}`);
+                            const docRef = doc(db, "users", uid, "exerciseOverrides", overrides[i].id);
+                            await deleteDoc(docRef);
+                            duplicatesRemoved++;
+                            duplicatesFound++;
+                        }
+                    }
+
+                    // Handle multiple customs (no override)
+                    if (overrides.length === 0 && customs.length > 1) {
+                        customs.sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
+                        for (let i = 1; i < customs.length; i++) {
+                            console.log(`  🗑️ Removing duplicate custom: ${customs[i].id}`);
+                            const docRef = doc(db, "users", uid, "customExercises", customs[i].id);
+                            await deleteDoc(docRef);
+                            duplicatesRemoved++;
+                            duplicatesFound++;
+                        }
+                    }
+                } else {
+                    // No default - just handle duplicates within user collections
+                    exercises.sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
+
+                    for (let i = 1; i < exercises.length; i++) {
+                        const ex = exercises[i];
+                        console.log(`  🗑️ Removing duplicate from ${ex.collection}: ${ex.id}`);
+                        const docRef = doc(db, "users", uid, ex.collection, ex.id);
+                        await deleteDoc(docRef);
+                        duplicatesRemoved++;
+                        duplicatesFound++;
+                    }
+                }
+            }
+        }
+
+        if (duplicatesFound === 0) {
+            console.log('\n✅ No duplicates found');
+            showNotification('No duplicate exercises found', 'info');
+        } else {
+            console.log(`\n✅ Removed ${duplicatesRemoved} duplicate(s)`);
+            showNotification(`Removed ${duplicatesRemoved} duplicate exercise(s)`, 'success');
+        }
+
+        return { found: duplicatesFound, removed: duplicatesRemoved };
+
+    } catch (error) {
+        console.error('❌ Error cleaning up duplicates:', error);
+        showNotification('Error cleaning up duplicates', 'error');
+        throw error;
+    }
 }

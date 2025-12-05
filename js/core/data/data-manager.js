@@ -64,7 +64,8 @@ export async function saveWorkoutData(state) {
                 weight: ex.weight,
                 video: ex.video || '',
                 equipment: ex.equipment || null,
-                equipmentLocation: ex.equipmentLocation || null
+                equipmentLocation: ex.equipmentLocation || null,
+                bodyPart: ex.bodyPart || null  // Include bodyPart for progress categorization
             }))
         };
 
