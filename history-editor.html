@@ -726,6 +726,68 @@
         let selectedExercises = new Map(); // Map of "docId|exerciseKey" -> exercise data
         let equipmentByExercise = {}; // Map: exerciseName -> Set of equipment names
         let allEquipmentLocations = new Set(); // All equipment locations used
+        let exerciseLibrary = {}; // Map: exerciseName -> exercise data from library
+        let savedEquipment = []; // Equipment from equipment collection
+
+        // Load exercise library from Firebase
+        async function loadExerciseLibrary() {
+            if (!currentUser) return;
+
+            try {
+                // Load exercises collection
+                const exercisesRef = collection(db, 'users', currentUser.uid, 'exercises');
+                const snapshot = await getDocs(exercisesRef);
+
+                exerciseLibrary = {};
+
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    // Exercise library documents have machine/name and equipment info
+                    const name = data.machine || data.name || docSnap.id;
+                    exerciseLibrary[name] = {
+                        equipment: data.equipment || null,
+                        equipmentLocation: data.equipmentLocation || null,
+                        ...data
+                    };
+                });
+
+                console.log(`Loaded ${Object.keys(exerciseLibrary).length} exercises from library`);
+
+                // Also load equipment collection
+                const equipmentRef = collection(db, 'users', currentUser.uid, 'equipment');
+                const equipSnapshot = await getDocs(equipmentRef);
+
+                savedEquipment = [];
+                equipSnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    savedEquipment.push({
+                        id: docSnap.id,
+                        name: data.name,
+                        exerciseTypes: data.exerciseTypes || [],
+                        locations: data.locations || [],
+                        ...data
+                    });
+                });
+
+                console.log(`Loaded ${savedEquipment.length} equipment items`);
+
+                // Also load locations collection (gym locations)
+                const locationsRef = collection(db, 'users', currentUser.uid, 'locations');
+                const locSnapshot = await getDocs(locationsRef);
+
+                locSnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (data.name) {
+                        allEquipmentLocations.add(data.name);
+                    }
+                });
+
+                console.log(`Loaded ${locSnapshot.size} saved locations`);
+
+            } catch (error) {
+                console.error('Error loading exercise library:', error);
+            }
+        }
 
         // Auth state
         onAuthStateChanged(auth, (user) => {
@@ -737,7 +799,8 @@
                     <span style="color: var(--text-muted); margin-right: 12px;">${user.email}</span>
                     <button class="btn btn-secondary btn-small" onclick="signOutUser()">Sign Out</button>
                 `;
-                loadWorkouts();
+                // Load exercise library first, then workouts
+                loadExerciseLibrary().then(() => loadWorkouts());
             } else {
                 document.getElementById('auth-section').style.display = 'block';
                 document.getElementById('main-content').style.display = 'none';
@@ -778,6 +841,38 @@
                 exerciseNames = new Set();
                 equipmentByExercise = {};
                 allEquipmentLocations = new Set();
+
+                // Pre-populate equipment from exercise library
+                Object.entries(exerciseLibrary).forEach(([name, data]) => {
+                    if (!equipmentByExercise[name]) {
+                        equipmentByExercise[name] = new Set();
+                    }
+                    if (data.equipment) {
+                        equipmentByExercise[name].add(data.equipment);
+                    }
+                    if (data.equipmentLocation) {
+                        allEquipmentLocations.add(data.equipmentLocation);
+                    }
+                });
+
+                // Also add equipment from equipment collection
+                savedEquipment.forEach(eq => {
+                    // Add this equipment to all exercise types it's used with
+                    if (eq.exerciseTypes && eq.exerciseTypes.length > 0) {
+                        eq.exerciseTypes.forEach(exName => {
+                            if (!equipmentByExercise[exName]) {
+                                equipmentByExercise[exName] = new Set();
+                            }
+                            if (eq.name) {
+                                equipmentByExercise[exName].add(eq.name);
+                            }
+                        });
+                    }
+                    // Add locations
+                    if (eq.locations) {
+                        eq.locations.forEach(loc => allEquipmentLocations.add(loc));
+                    }
+                });
 
                 snapshot.forEach((docSnap) => {
                     const data = docSnap.data();
