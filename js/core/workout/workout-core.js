@@ -158,8 +158,8 @@ export async function startWorkout(workoutType) {
     if (dashboard) dashboard.classList.add('hidden');
     if (activeWorkout) activeWorkout.classList.remove('hidden');
 
-    // Show header and nav on active workout (only hide when exercise modal opens)
-    setHeaderMode(true);
+    // Hide main header (no logo on active workout), show bottom nav
+    setHeaderMode(false);
     setBottomNavVisible(true);
 
     // Hide resume banner when starting a workout
@@ -329,8 +329,8 @@ export function continueInProgressWorkout() {
     const activeWorkout = document.getElementById('active-workout');
     if (activeWorkout) activeWorkout.classList.remove('hidden');
 
-    // Show header and nav on active workout (only hide when exercise modal opens)
-    setHeaderMode(true);
+    // Hide main header (no logo on active workout), show bottom nav
+    setHeaderMode(false);
     setBottomNavVisible(true);
 
     // Set workout name in header
@@ -344,6 +344,19 @@ export function continueInProgressWorkout() {
 
     // Render exercises
     renderExercises();
+
+    // Restore location from saved data
+    if (window.inProgressWorkout.location) {
+        setSessionLocation(window.inProgressWorkout.location);
+        // If workout has logged sets, location should be locked
+        const hasLoggedSets = Object.values(window.inProgressWorkout.exercises || {}).some(ex =>
+            ex.sets && ex.sets.some(set => set.reps || set.weight)
+        );
+        if (hasLoggedSets) {
+            lockLocation();
+        }
+        updateLocationIndicator(window.inProgressWorkout.location, hasLoggedSets);
+    }
 
     // Clear in-progress state
     // DON'T clear this - keep it so we can resume again if user navigates away
@@ -1218,9 +1231,7 @@ export function deleteExerciseFromWorkout(exerciseIndex) {
 
     saveWorkoutData(AppState);
     renderExercises();
-
-    // Show notification
-    showNotification(`Removed ${exerciseName}`, 'success');
+    // Removed notification - UI update is self-evident
 }
 
 // ===================================================================
@@ -1482,12 +1493,7 @@ export async function applyEquipmentChange(equipmentName, equipmentLocation, equ
         focusExercise(exerciseIndex);
     }
 
-    // Show notification
-    if (equipmentName) {
-        showNotification(`Equipment updated to "${equipmentName}"`, 'success');
-    } else {
-        showNotification('Equipment removed', 'success');
-    }
+    // Removed unnecessary notifications for equipment updates
 
     // Clean up
     pendingEquipmentChangeIndex = null;
@@ -2410,7 +2416,7 @@ function promptForNewLocation(coords, workoutManager, savedLocations) {
                         setSessionLocation(name);
                     }
 
-                    showNotification(`Location set: ${name}`, 'success');
+                    // Removed notification - location indicator already shows
                 } catch (error) {
                     console.error('❌ Error saving location:', error);
                 }
@@ -2457,7 +2463,7 @@ function promptForLocationSelection(workoutManager, savedLocations) {
                         setSessionLocation(name);
                     }
 
-                    showNotification(`Location set: ${name}`, 'success');
+                    // Removed notification - location indicator already shows
                 } catch (error) {
                     console.error('❌ Error saving location:', error);
                 }
@@ -2631,7 +2637,7 @@ export async function confirmWorkoutLocationChange() {
             await saveWorkoutData(AppState);
         }
 
-        showNotification(`Location set: ${locationName}`, 'success');
+        // Removed notification - location indicator already shows
     }
 
     closeWorkoutLocationSelector();

@@ -672,7 +672,7 @@ export function editTemplateExercise(index) {
                 ex.equipmentLocation = updatedExercise.equipmentLocation;
                 ex.video = updatedExercise.video;
                 renderTemplateExercises();
-                showNotification('Exercise updated', 'success');
+                // Removed notification - UI update is self-evident
             }
             editingTemplateExerciseIndex = null;
             // Note: Don't clear flags here - closeEditExerciseSection() needs them
@@ -751,7 +751,7 @@ export function saveTemplateExerciseEdit() {
 
     closeTemplateExerciseEdit();
     renderTemplateExercises();
-    showNotification('Exercise updated', 'success');
+    // Removed notification - UI update is self-evident
 }
 
 export function removeTemplateExercise(index) {
@@ -759,7 +759,7 @@ export function removeTemplateExercise(index) {
     
     currentEditingTemplate.exercises.splice(index, 1);
     renderTemplateExercises();
-    showNotification('Exercise removed from workout', 'success');
+    // Removed notification - UI update is self-evident
 }
 
 // Exercise Library functions

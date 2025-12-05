@@ -1308,7 +1308,7 @@ export async function saveEquipmentFromEditor() {
             location: null  // Clear old single location field
         });
 
-        showNotification('Equipment saved!', 'success');
+        // Removed notification - action is self-evident
         closeEquipmentEditor();
 
         // Refresh the equipment list if we're in the exercise edit section
@@ -1339,7 +1339,7 @@ export async function deleteEquipmentFromEditor() {
 
         await workoutManager.deleteEquipment(editingEquipmentData.id);
 
-        showNotification('Equipment deleted', 'success');
+        // Removed notification - action is self-evident
         closeEquipmentEditor();
 
         // Clear selection if this was the selected equipment
