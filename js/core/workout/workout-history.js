@@ -1141,8 +1141,19 @@ window.deleteWorkoutById = async function(docId) {
             }
 
             console.log(`🗑️ Calling deleteDoc for users/${AppState.currentUser.uid}/workouts/${docId}`);
-            await deleteDoc(doc(db, "users", AppState.currentUser.uid, "workouts", docId));
+            const docRef = doc(db, "users", AppState.currentUser.uid, "workouts", docId);
+            await deleteDoc(docRef);
             console.log('✅ Firebase delete successful');
+
+            // Verify the document is actually gone by trying to fetch it from server
+            const { getDoc } = await import('../data/firebase-config.js');
+            const verifyDoc = await getDoc(docRef);
+            if (verifyDoc.exists()) {
+                console.error('❌ Document still exists after delete!');
+                showNotification('Delete may not have synced - please refresh', 'warning');
+            } else {
+                console.log('✅ Verified: Document no longer exists on server');
+            }
 
             // Close the modal first so user sees immediate feedback
             window.workoutHistory.closeWorkoutDetailModal();
