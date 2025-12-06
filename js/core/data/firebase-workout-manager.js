@@ -1,9 +1,9 @@
 // Enhanced Firebase Workout Manager - js/core/firebase-workout-manager.js
 // Replace your existing firebase-workout-manager.js with this version
 
-import { 
-    db, doc, setDoc, getDoc, deleteDoc, collection, query, where, 
-    getDocs, orderBy, limit, onSnapshot 
+import {
+    db, doc, setDoc, getDoc, deleteDoc, collection, query, where,
+    getDocs, getDocsFromServer, orderBy, limit, onSnapshot
 } from './firebase-config.js';
 import { writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { showNotification } from '../ui/ui-helpers.js';
@@ -776,7 +776,8 @@ async getGlobalDefaultTemplates() {
         try {
             const workoutsRef = collection(this.db, "users", this.appState.currentUser.uid, "workouts");
             const q = query(workoutsRef, orderBy("date", "desc"));
-            const querySnapshot = await getDocs(q);
+            // Use getDocsFromServer to bypass Firestore cache (ensures deleted docs don't reappear)
+            const querySnapshot = await getDocsFromServer(q);
 
             const workouts = [];
             querySnapshot.forEach((doc) => {
