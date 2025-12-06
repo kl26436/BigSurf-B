@@ -1146,10 +1146,15 @@ window.deleteWorkoutById = async function(docId) {
             console.log('✅ Firebase delete successful');
 
             // Verify the document is actually gone by trying to fetch it from server
-            const { getDoc } = await import('../data/firebase-config.js');
-            const verifyDoc = await getDoc(docRef);
-            if (verifyDoc.exists()) {
-                console.error('❌ Document still exists after delete!');
+            const { getDocs, collection, query, where } = await import('../data/firebase-config.js');
+
+            // Force a fresh query from the server to verify deletion
+            const workoutsRef = collection(db, "users", AppState.currentUser.uid, "workouts");
+            const q = query(workoutsRef, where("__name__", "==", docId));
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                console.error('❌ Document still exists after delete! Found', snapshot.size, 'docs');
                 showNotification('Delete may not have synced - please refresh', 'warning');
             } else {
                 console.log('✅ Verified: Document no longer exists on server');
