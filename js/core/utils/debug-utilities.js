@@ -1404,3 +1404,87 @@ export async function findIncompleteWorkouts() {
         throw error;
     }
 }
+
+/**
+ * ONE-TIME MIGRATION: Copy equipment data from originalWorkout.exercises to exercises.exercise_X
+ * This fixes the history editor filter not recognizing equipment that was stored in the wrong place
+ */
+export async function migrateEquipmentToExercises() {
+    if (!AppState.currentUser) {
+        console.log('❌ No user signed in');
+        return { migrated: 0 };
+    }
+
+    console.log('🔄 Migrating equipment data to exercises object...\n');
+
+    try {
+        const { db, collection, getDocs, doc, updateDoc } = await import('../data/firebase-config.js');
+        const uid = AppState.currentUser.uid;
+
+        const workoutsRef = collection(db, "users", uid, "workouts");
+        const snapshot = await getDocs(workoutsRef);
+
+        let migratedCount = 0;
+        let exercisesMigrated = 0;
+
+        for (const docSnap of snapshot.docs) {
+            const data = docSnap.data();
+            const updates = {};
+            let workoutNeedsUpdate = false;
+
+            // Check if originalWorkout.exercises has equipment data
+            if (data.originalWorkout?.exercises && data.exercises) {
+                data.originalWorkout.exercises.forEach((origEx, idx) => {
+                    const exerciseKey = `exercise_${idx}`;
+                    const savedEx = data.exercises[exerciseKey];
+
+                    // If originalWorkout has equipment but exercises doesn't, copy it over
+                    if (savedEx) {
+                        // Copy name if missing
+                        if (!savedEx.name && (origEx.machine || origEx.name)) {
+                            updates[`exercises.${exerciseKey}.name`] = origEx.machine || origEx.name;
+                            workoutNeedsUpdate = true;
+                        }
+
+                        // Copy equipment if missing
+                        if (!savedEx.equipment && origEx.equipment) {
+                            updates[`exercises.${exerciseKey}.equipment`] = origEx.equipment;
+                            workoutNeedsUpdate = true;
+                            exercisesMigrated++;
+                        }
+
+                        // Copy equipmentLocation if missing
+                        if (!savedEx.equipmentLocation && origEx.equipmentLocation) {
+                            updates[`exercises.${exerciseKey}.equipmentLocation`] = origEx.equipmentLocation;
+                            workoutNeedsUpdate = true;
+                        }
+                    }
+                });
+            }
+
+            if (workoutNeedsUpdate) {
+                const docRef = doc(db, "users", uid, "workouts", docSnap.id);
+                await updateDoc(docRef, updates);
+                migratedCount++;
+                console.log(`  ✓ Migrated: ${data.date} - ${data.workoutType}`);
+            }
+        }
+
+        console.log(`\n✅ Migration complete!`);
+        console.log(`   Workouts updated: ${migratedCount}`);
+        console.log(`   Exercises migrated: ${exercisesMigrated}`);
+
+        if (migratedCount > 0) {
+            showNotification(`Migrated ${exercisesMigrated} exercises in ${migratedCount} workouts`, 'success');
+        } else {
+            showNotification('No migration needed - data already current', 'info');
+        }
+
+        return { migrated: migratedCount, exercises: exercisesMigrated };
+
+    } catch (error) {
+        console.error('❌ Migration error:', error);
+        showNotification('Migration failed', 'error');
+        throw error;
+    }
+}

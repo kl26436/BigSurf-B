@@ -137,7 +137,7 @@ import {
     debounce, setupErrorLogging, runAllDebugChecks,
     cleanupDuplicateExercises, scanDuplicateExercises, mergeDuplicateExercises,
     getWorkoutHistoryForEditing, updateWorkoutLocation, updateExerciseEquipment,
-    bulkUpdateEquipment, listAllEquipment, findIncompleteWorkouts
+    bulkUpdateEquipment, listAllEquipment, findIncompleteWorkouts, migrateEquipmentToExercises
 } from './core/utils/debug-utilities.js';
 
 // Firebase Workout Manager (for exercise-manager.html)
@@ -568,6 +568,7 @@ window.updateExerciseEquipment = updateExerciseEquipment;
 window.bulkUpdateEquipment = bulkUpdateEquipment;
 window.listAllEquipment = listAllEquipment;
 window.findIncompleteWorkouts = findIncompleteWorkouts;
+window.migrateEquipmentToExercises = migrateEquipmentToExercises;
 
 // State access (for debugging)
 window.AppState = AppState;
