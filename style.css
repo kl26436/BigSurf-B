@@ -643,28 +643,45 @@ body {
 .insight-value { font-size: 0.96rem; font-weight: 600; }
 
 /* Badges */
+.badges-section-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+.badges-section-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, #ffd700, #ff8c00);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
 .badges-row-preview {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   overflow-x: auto;
-  padding-bottom: 8px;
-  margin-bottom: 16px;
+  padding: 0.5rem 0;
+  justify-content: flex-start;
 }
 .badge-preview-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  min-width: 60px;
+  gap: 8px;
+  min-width: 70px;
 }
 .badge-preview-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   position: relative;
 }
 /* Badge color classes applied to parent item */

@@ -660,26 +660,28 @@ function renderDashboardBadgesSection(badges) {
     const earnedBadges = badgesList.filter(b => b.earned);
 
     return `
-        <div class="stats-section-header" onclick="toggleDashboardSection('badges')">
-            <span class="stats-section-title">Badges</span>
-            <span class="view-more-link">${isExpanded ? 'Less' : 'View All'}</span>
-        </div>
+        <div class="badges-section-card">
+            <div class="stats-section-header" onclick="toggleDashboardSection('badges')" style="margin-bottom: 0.5rem;">
+                <span class="stats-section-title">Badges</span>
+                <span class="view-more-link">${isExpanded ? 'Less' : 'View All'}</span>
+            </div>
 
-        <div class="badges-row-preview">
-            ${earnedBadges.length > 0 ? earnedBadges.slice(0, 4).map(badge => `
-                <div class="badge-preview-item ${badge.colorClass}">
-                    <div class="badge-preview-icon">
-                        <i class="${badge.icon}"></i>
-                        ${badge.countBadge ? `<span class="badge-count-overlay">${badge.countBadge}</span>` : ''}
+            <div class="badges-row-preview">
+                ${earnedBadges.length > 0 ? earnedBadges.slice(0, 4).map(badge => `
+                    <div class="badge-preview-item ${badge.colorClass}">
+                        <div class="badge-preview-icon">
+                            <i class="${badge.icon}"></i>
+                            ${badge.countBadge ? `<span class="badge-count-overlay">${badge.countBadge}</span>` : ''}
+                        </div>
+                        <span class="badge-preview-label">${badge.shortName}</span>
                     </div>
-                    <span class="badge-preview-label">${badge.shortName}</span>
-                </div>
-            `).join('') : `
-                <div class="badges-empty-msg">Complete workouts to earn badges!</div>
-            `}
-        </div>
+                `).join('') : `
+                    <div class="badges-empty-msg">Complete workouts to earn badges!</div>
+                `}
+            </div>
 
-        ${isExpanded ? renderDashboardBadgesExpanded(badgesList) : ''}
+            ${isExpanded ? renderDashboardBadgesExpanded(badgesList) : ''}
+        </div>
     `;
 }
 
