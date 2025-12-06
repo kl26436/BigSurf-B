@@ -97,8 +97,7 @@ async function checkForInProgressWorkout() {
                     Object.values(workoutData.exercises).some(ex => ex.completed || (ex.sets && ex.sets.length > 0));
 
                 const { setDoc, doc, db, deleteDoc } = await import('../data/firebase-config.js');
-                // Schema v3.0: Use docId if available, fall back to date for old schema
-                const docId = workoutData.docId || workoutData.workoutId || workoutData.date;
+                const docId = workoutData.docId || workoutData.workoutId;
                 const workoutRef = doc(db, "users", AppState.currentUser.uid, "workouts", docId);
 
                 if (hasCompletedExercises) {

@@ -154,23 +154,6 @@ export async function loadTodaysWorkout(state) {
             }
         });
 
-        // Fallback: Check old schema (document ID = date) for backwards compatibility
-        if (!incompleteWorkout) {
-            const oldDocRef = doc(db, "users", state.currentUser.uid, "workouts", today);
-            const oldDocSnap = await getDoc(oldDocRef);
-
-            if (oldDocSnap.exists()) {
-                const data = oldDocSnap.data();
-                if (data.workoutType &&
-                    data.workoutType !== 'none' &&
-                    data.date === today &&
-                    !data.completedAt &&
-                    !data.cancelledAt) {
-                    incompleteWorkout = { ...data, docId: today };
-                }
-            }
-        }
-
         return incompleteWorkout;
     } catch (error) {
         console.error('Error loading today\'s workout:', error);
@@ -199,18 +182,6 @@ export async function loadWorkoutsByDate(state, dateStr) {
             const data = docSnap.data();
             workouts.push({ ...data, docId: docSnap.id });
         });
-
-        // Fallback: Check old schema (document ID = date) for backwards compatibility
-        // Only if we didn't find any workouts with the new schema
-        if (workouts.length === 0) {
-            const oldDocRef = doc(db, "users", state.currentUser.uid, "workouts", dateStr);
-            const oldDocSnap = await getDoc(oldDocRef);
-
-            if (oldDocSnap.exists()) {
-                const data = oldDocSnap.data();
-                workouts.push({ ...data, docId: dateStr });
-            }
-        }
 
         // Sort by startedAt (most recent first) if available
         workouts.sort((a, b) => {

@@ -1110,7 +1110,7 @@ calculateProgress(workout) {
  };
 }
 
-// Schema v3.0: Delete workout by document ID (works with both old and new schema)
+// Delete workout by document ID
 console.log('🗑️ Registering deleteWorkoutById on window...');
 window.deleteWorkoutById = async function(docId) {
     console.log('🗑️ deleteWorkoutById called with:', docId);
@@ -1188,7 +1188,3 @@ window.deleteWorkoutById = async function(docId) {
     }
 };
 
-// Legacy function - redirects to deleteWorkoutById
-window.deleteWorkoutFromCalendar = async function(dateOrDocId) {
-    await window.deleteWorkoutById(dateOrDocId);
-};

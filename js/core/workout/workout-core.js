@@ -387,19 +387,9 @@ export async function editHistoricalWorkout(docIdOrDate) {
         return;
     }
 
-    // Load the workout data from Firebase
-    // Support both docId (new schema: 2025-12-05_timestamp_random) and date (old schema: 2025-12-05)
-    const { loadWorkoutByDate, loadWorkoutById } = await import('../data/data-manager.js');
-
-    let workoutData;
-    // Check if it's a docId (contains underscore with timestamp) or a plain date
-    if (docIdOrDate.includes('_')) {
-        // New schema - load by document ID
-        workoutData = await loadWorkoutById(AppState, docIdOrDate);
-    } else {
-        // Old schema - load by date
-        workoutData = await loadWorkoutByDate(AppState, docIdOrDate);
-    }
+    // Load the workout data from Firebase by document ID
+    const { loadWorkoutById } = await import('../data/data-manager.js');
+    const workoutData = await loadWorkoutById(AppState, docIdOrDate);
 
     if (!workoutData) {
         showNotification('Could not load workout data', 'error');
